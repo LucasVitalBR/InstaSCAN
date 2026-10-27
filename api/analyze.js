@@ -259,10 +259,32 @@ async function callOpenAI(userMessage, images = []) {
 
 function validateReport(report) {
   if (!report || typeof report !== "object") throw new Error("Resposta da IA não é um objeto.");
-  if (!Array.isArray(report.pilares) || report.pilares.length !== PILLAR_TITLES.length) {
-    throw new Error("A IA não devolveu os 12 pilares no formato esperado.");
+  // Normaliza em vez de falhar: corta excesso, completa faltantes, corrige status.
+  let pilares = Array.isArray(report.pilares) ? report.pilares.slice(0, PILLAR_TITLES.length) : [];
+  while (pilares.length < PILLAR_TITLES.length) {
+    pilares.push({ status: "inv", nota: "Sem dados suficientes para avaliar este pilar." });
   }
+  const map = { good: "good", opp: "opp", inv: "inv", consistente: "good", oportunidade: "opp", investigar: "inv" };
+  report.pilares = pilares.map((p) => {
+    const obj = p && typeof p === "object" ? p : { nota: String(p || "") };
+    return { status: map[String(obj.status || "").toLowerCase()] || "inv", nota: obj.nota || obj.justificativa || "" };
+  });
   return report;
+}
+
+function friendlyError(msg) {
+  const m = String(msg || "");
+  if (/insufficient_quota|exceeded your current quota|billing/i.test(m))
+    return "A conta da OpenAI está sem créditos (ou sem forma de pagamento) para usar a API. Adicione créditos em platform.openai.com > Billing.";
+  if (/invalid_api_key|Incorrect API key|401/.test(m))
+    return "A chave da OpenAI configurada no Vercel é inválida. Gere uma nova e atualize a variável OPENAI_API_KEY.";
+  if (/model_not_found|does not have access to model/i.test(m))
+    return "A conta da OpenAI não tem acesso ao modelo usado. Verifique o projeto/limites da chave.";
+  if (/rate_limit|429/.test(m))
+    return "A OpenAI limitou as requisições agora (rate limit). Espere 1 minuto e tente de novo.";
+  if (/Unexpected token|JSON/i.test(m))
+    return "A IA respondeu fora do formato esperado. Tente de novo.";
+  return "Não foi possível gerar o diagnóstico agora. Tente novamente em instantes.";
 }
 
 module.exports = async function handler(req, res) {
@@ -308,9 +330,8 @@ module.exports = async function handler(req, res) {
   } catch (err) {
     console.error("Erro em /api/analyze:", err);
     res.status(502).json({
-      error:
-        "Não foi possível gerar o diagnóstico agora. Tente novamente em instantes.",
-      detail: String(err?.message || err),
+      error: friendlyError(err?.message || err),
+      detail: String(err?.message || err).replace(/sk-[A-Za-z0-9_\-*]+/g, "sk-***").slice(0, 400),
     });
   }
 };

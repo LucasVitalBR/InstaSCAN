@@ -581,10 +581,12 @@ function setStep(n){
     tab.className = "step" + (i===n ? " active" : (i<n ? " done" : ""));
   });
 }
-function showError(msg){
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+function showError(msg, detail){
   var box = $("error-box");
   box.hidden = false;
-  box.innerHTML = '<strong style="color:var(--inv)">Ops.</strong><p style="margin:8px 0 0;color:var(--fg-muted);font-size:14px">'+msg+'</p>';
+  box.innerHTML = '<strong style="color:var(--inv)">Ops.</strong><p style="margin:8px 0 0;color:var(--fg-muted);font-size:14px">'+esc(msg)+'</p>' +
+    (detail ? '<p style="margin:10px 0 0;font-family:var(--font-mono);font-size:11px;color:var(--fg-muted);word-break:break-word;opacity:.85">detalhe técnico: '+esc(detail)+'</p>' : '');
   box.scrollIntoView({behavior:"smooth", block:"center"});
 }
 function clearError(){ $("error-box").hidden = true; }
@@ -794,7 +796,7 @@ $("btn-run-diagnostico").addEventListener("click", function(){
     bar.style.width = "100%";
     if (!res.ok){
       setStep(2); showView("view-perfil");
-      showError(res.json.error || "Erro ao gerar o diagnóstico.");
+      showError(res.json.error || "Erro ao gerar o diagnóstico.", res.json.detail);
       return;
     }
     renderReport(res.json);
