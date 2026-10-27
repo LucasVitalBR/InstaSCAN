@@ -85,6 +85,18 @@ REGRAS DE COMPORTAMENTO
 - Explique termos técnicos quando isso ajudar o responsável pelo negócio a entender.
 - Adapte tudo ao segmento, público, objetivo comercial e recursos reais da empresa informados.
 
+PRINTS / IMAGENS DO PERFIL
+Quando houver imagens anexadas, elas são capturas de tela reais do perfil (tela inicial com bio,
+grade de posts, posts abertos, destaques, painel de insights/visualizações). Leia com atenção:
+- Extraia nome, foto, bio, link, número de seguidores/seguindo/publicações, destaques, temas e
+  estilo visual dos posts, legendas visíveis, curtidas, comentários, visualizações, alcance e
+  qualquer métrica do painel de insights que estiver legível.
+- Use esses dados como evidência OBSERVADA (cite "no print" nas notas quando relevante).
+- Se um número estiver ilegível ou cortado, não chute: diga que não foi possível ler.
+- Dados digitados no formulário complementam ou corrigem os prints; em conflito, prefira o
+  digitado e mencione a divergência.
+- Avalie também a parte visual (pilar 4) a partir do que aparece nas imagens.
+
 FORMATO DE SAÍDA
 Responda SOMENTE com um objeto JSON válido (sem markdown, sem texto antes ou depois), seguindo
 exatamente este formato:
@@ -111,7 +123,21 @@ exatamente este formato:
   "conclusao": "1-3 frases: o que priorizar agora e o que NÃO priorizar antes de resolver o gargalo principal"
 }`;
 
-function buildUserMessage({ handle, instagramData, negocio }) {
+const MAX_IMAGES = 6;
+
+function sanitizeImages(images) {
+  if (!Array.isArray(images)) return [];
+  return images
+    .filter((s) => typeof s === "string" && /^data:image\/(jpeg|jpg|png|webp);base64,/i.test(s))
+    .slice(0, MAX_IMAGES);
+}
+
+function splitDataUrl(dataUrl) {
+  const m = /^data:(image\/[a-z]+);base64,(.*)$/i.exec(dataUrl);
+  return { mediaType: m[1].toLowerCase().replace("jpg", "jpeg"), data: m[2] };
+}
+
+function buildUserMessage({ handle, instagramData, negocio }, imageCount = 0) {
   const lines = [];
   lines.push(`@ do Instagram analisado: @${handle}`);
   lines.push("");
@@ -148,6 +174,12 @@ function buildUserMessage({ handle, instagramData, negocio }) {
     lines.push("- Posts recentes: (não informado)");
   }
   lines.push("");
+  if (imageCount > 0) {
+    lines.push(
+      `PRINTS ANEXADOS: ${imageCount} captura(s) de tela do perfil seguem nesta mensagem. Extraia delas todos os dados visíveis (bio, seguidores, posts, curtidas, comentários, visualizações, insights) e use como evidência principal.`
+    );
+    lines.push("");
+  }
   lines.push(
     "Gere o diagnóstico completo seguindo exatamente o formato JSON definido nas instruções do sistema."
   );
@@ -160,7 +192,14 @@ function extractJson(text) {
   return JSON.parse(cleaned);
 }
 
-async function callAnthropic(userMessage) {
+async function callAnthropic(userMessage, images = []) {
+  const content = [
+    ...images.map((d) => {
+      const { mediaType, data } = splitDataUrl(d);
+      return { type: "image", source: { type: "base64", media_type: mediaType, data } };
+    }),
+    { type: "text", text: userMessage },
+  ];
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -172,7 +211,7 @@ async function callAnthropic(userMessage) {
       model: "claude-sonnet-4-5",
       max_tokens: 4000,
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userMessage }],
+      messages: [{ role: "user", content }],
     }),
   });
   if (!resp.ok) {
@@ -184,7 +223,13 @@ async function callAnthropic(userMessage) {
   return extractJson(text);
 }
 
-async function callOpenAI(userMessage) {
+async function callOpenAI(userMessage, images = []) {
+  const userContent = images.length
+    ? [
+        { type: "text", text: userMessage },
+        ...images.map((url) => ({ type: "image_url", image_url: { url, detail: "high" } })),
+      ]
+    : userMessage;
   const resp = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -192,11 +237,13 @@ async function callOpenAI(userMessage) {
       authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
+      // Com prints usamos o gpt-4o (leitura de números em imagem bem mais confiável).
+      model: images.length ? "gpt-4o" : "gpt-4o-mini",
       response_format: { type: "json_object" },
+      max_tokens: 4000,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userMessage },
+        { role: "user", content: userContent },
       ],
       temperature: 0.4,
     }),
@@ -240,13 +287,14 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    const userMessage = buildUserMessage(body);
+    const images = sanitizeImages(body?.images);
+    const userMessage = buildUserMessage(body, images.length);
 
     let report;
     if (process.env.ANTHROPIC_API_KEY) {
-      report = await callAnthropic(userMessage);
+      report = await callAnthropic(userMessage, images);
     } else if (process.env.OPENAI_API_KEY) {
-      report = await callOpenAI(userMessage);
+      report = await callOpenAI(userMessage, images);
     } else {
       res.status(500).json({
         error:
