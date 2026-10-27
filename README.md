@@ -34,6 +34,11 @@ No painel do projeto no Vercel: **Settings > Environment Variables**. Adicione U
 - `OPENAI_API_KEY` — a chave da sua conta OpenAI (você já tem créditos lá)
 - `ANTHROPIC_API_KEY` — se preferir usar a Anthropic
 
+Opcional — consulta pelo @ que funciona de verdade:
+- `APIFY_TOKEN` — token da sua conta na Apify (apify.com, plano grátis com créditos mensais).
+  Sem ele, o app tenta a consulta não-oficial, que o Instagram costuma bloquear (erro 429)
+  quando vem de servidores como o Vercel. Com ou sem ele, a opção de foto sempre funciona.
+
 Depois de salvar a variável, faça um **novo deploy** (Vercel > Deployments > ⋯ > Redeploy)
 pra ela entrar em vigor.
 

@@ -102,6 +102,7 @@ Responda SOMENTE com um objeto JSON válido (sem markdown, sem texto antes ou de
 exatamente este formato:
 
 {
+  "perfil_lido": { "handle": "@ do perfil (lido do print ou informado)", "nome": "", "seguidores": "", "seguindo": "", "publicacoes": "" },
   "resumo_executivo": "2 a 4 frases em linguagem simples sobre a situação do perfil e as oportunidades mais relevantes",
   "pilares": [
     { "status": "good" | "opp" | "inv", "nota": "1-2 frases de justificativa, citando evidência" }
@@ -139,7 +140,7 @@ function splitDataUrl(dataUrl) {
 
 function buildUserMessage({ handle, instagramData, negocio }, imageCount = 0) {
   const lines = [];
-  lines.push(`@ do Instagram analisado: @${handle}`);
+  lines.push(handle ? `@ do Instagram analisado: @${handle}` : "@ do Instagram: (não informado — identifique pelo print anexado)");
   lines.push("");
   lines.push("CONTEXTO DO NEGÓCIO (informado pelo responsável):");
   lines.push(`- Empresa: ${negocio?.empresa || "(não informado)"}`);
@@ -153,11 +154,17 @@ function buildUserMessage({ handle, instagramData, negocio }, imageCount = 0) {
   lines.push("");
 
   lines.push("DADOS DO PERFIL DISPONÍVEIS:");
-  if (instagramData?.fonte === "auto") {
+  if (instagramData?.fonte === "print") {
+    lines.push("(nenhum dado digitado — extraia tudo dos prints anexados)");
+  } else if (instagramData?.fonte === "auto") {
     lines.push("(obtidos automaticamente a partir do @ informado)");
   } else {
     lines.push("(digitados manualmente por quem está conduzindo a análise, olhando o perfil)");
   }
+  if (instagramData?.nome) lines.push(`- Nome no perfil: ${instagramData.nome}`);
+  if (instagramData?.categoria) lines.push(`- Categoria: ${instagramData.categoria}`);
+  if (instagramData?.seguindo != null) lines.push(`- Seguindo: ${instagramData.seguindo}`);
+  if (instagramData?.publicacoes != null) lines.push(`- Publicações: ${instagramData.publicacoes}`);
   lines.push(`- Bio: ${instagramData?.bio || "(não informado)"}`);
   lines.push(`- Seguidores: ${instagramData?.seguidores || "(não informado)"}`);
   lines.push(`- Link da bio: ${instagramData?.link || "(não informado / sem link)"}`);
@@ -167,7 +174,7 @@ function buildUserMessage({ handle, instagramData, negocio }, imageCount = 0) {
       lines.push(
         `  ${i + 1}. Legenda: "${p.caption || "(sem legenda informada)"}" — curtidas: ${
           p.likes ?? "?"
-        }, comentários: ${p.comments ?? "?"}`
+        }, comentários: ${p.comments ?? "?"}${p.views != null ? `, visualizações: ${p.views}` : ""}`
       );
     });
   } else {
@@ -304,12 +311,12 @@ module.exports = async function handler(req, res) {
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
     const handle = (body?.handle || "").trim().replace(/^@/, "");
-    if (!handle) {
-      res.status(400).json({ error: "Informe o @ do Instagram." });
+    const images = sanitizeImages(body?.images);
+    if (!handle && !images.length) {
+      res.status(400).json({ error: "Informe o @ do Instagram ou envie uma foto da tela do perfil." });
       return;
     }
 
-    const images = sanitizeImages(body?.images);
     const userMessage = buildUserMessage(body, images.length);
 
     let report;
@@ -326,7 +333,8 @@ module.exports = async function handler(req, res) {
     }
 
     validateReport(report);
-    res.status(200).json({ handle, pillarTitles: PILLAR_TITLES, report });
+    const finalHandle = handle || String(report?.perfil_lido?.handle || "").replace(/^@/, "");
+    res.status(200).json({ handle: finalHandle, pillarTitles: PILLAR_TITLES, report });
   } catch (err) {
     console.error("Erro em /api/analyze:", err);
     res.status(502).json({

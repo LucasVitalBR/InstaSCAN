@@ -60,6 +60,47 @@ async function fetchPublicProfile(username) {
   };
 }
 
+// Consulta via Apify (serviço de scraping com proxies residenciais). Só é usada se a variável
+// APIFY_TOKEN estiver configurada no Vercel. O plano gratuito da Apify dá créditos mensais
+// suficientes para um evento (cada perfil custa frações de centavo de dólar).
+async function fetchViaApify(username) {
+  const url =
+    "https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?token=" +
+    encodeURIComponent(process.env.APIFY_TOKEN) +
+    "&timeout=40";
+  const resp = await withTimeout(
+    fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ usernames: [username] }),
+    }),
+    45000
+  );
+  if (!resp.ok) throw new Error(`Apify respondeu ${resp.status}`);
+  const items = await resp.json();
+  const u = Array.isArray(items) ? items[0] : null;
+  if (!u || u.error || !u.username) throw new Error("Perfil não encontrado.");
+  if (u.private) throw new Error("Conta privada - não é possível analisar automaticamente.");
+  const posts = (u.latestPosts || []).slice(0, 6).map((p) => ({
+    caption: p.caption || "",
+    likes: p.likesCount ?? null,
+    comments: p.commentsCount ?? null,
+    views: p.videoViewCount ?? p.videoPlayCount ?? null,
+    thumbnail: p.displayUrl || null,
+  }));
+  return {
+    fonte: "auto",
+    nome: u.fullName || "",
+    bio: u.biography || "",
+    seguidores: u.followersCount ?? null,
+    seguindo: u.followsCount ?? null,
+    publicacoes: u.postsCount ?? null,
+    categoria: u.businessCategoryName || "",
+    link: u.externalUrl || "",
+    posts,
+  };
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader("access-control-allow-origin", "*");
   res.setHeader("access-control-allow-methods", "GET, OPTIONS");
@@ -76,7 +117,17 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const data = await fetchPublicProfile(handle);
+    let data;
+    if (process.env.APIFY_TOKEN) {
+      try {
+        data = await fetchViaApify(handle);
+      } catch (e) {
+        if (/privada|não encontrado/i.test(String(e.message))) throw e;
+        data = await fetchPublicProfile(handle);
+      }
+    } else {
+      data = await fetchPublicProfile(handle);
+    }
     res.status(200).json({ ok: true, data });
   } catch (err) {
     // Falha esperada e comum (bloqueio, timeout, conta privada, etc.) - o frontend cai
