@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InstaScan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef3fc; --surface:#ffffff; --surface-2:#eef3fc; --fg:#0f1f3d; --fg-muted:#5a6b88;
+  --border:#dde6f5; --border-strong:#b7c8ea;
+  --accent:#2457e6; --accent-2:#6a8bff; --accent-dark:#102a73; --accent-fg:#ffffff;
+  --good:#0f8a5f; --good-bg:#e2f5ec;
+  --opp:#b4780a; --opp-bg:#fbedd3;
+  --inv:#c23b3b; --inv-bg:#fbe3e1;
+  --shadow-sm:0 1px 2px rgba(16,42,115,.06);
+  --shadow-md:0 10px 30px -12px rgba(16,42,115,.22);
+  --shadow-lg:0 20px 50px -18px rgba(16,42,115,.3);
+  --font-display:'Sora','Segoe UI',sans-serif;
+  --font-body:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#070f22; --surface:#101c38; --surface-2:#15234a; --fg:#eaf0fb; --fg-muted:#93a6cc;
+    --border:#223a63; --border-strong:#33528c;
+    --accent:#5b8dff; --accent-2:#8fb3ff; --accent-dark:#bcd1ff; --accent-fg:#071226;
+    --good:#5fd6a4; --good-bg:#102f24;
+    --opp:#e8b765; --opp-bg:#352a12;
+    --inv:#f28b82; --inv-bg:#351a18;
+    --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+    --shadow-md:0 10px 30px -12px rgba(0,0,0,.55);
+    --shadow-lg:0 24px 60px -20px rgba(0,0,0,.65);
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--fg); font-family:var(--font-body); -webkit-font-smoothing:antialiased;
+  position:relative; overflow-x:hidden;
+}
+body::before, body::after{
+  content:""; position:fixed; z-index:-1; border-radius:50%; filter:blur(70px); pointer-events:none;
+}
+body::before{
+  width:560px; height:560px; top:-220px; right:-160px;
+  background:radial-gradient(circle at 30% 30%, var(--accent-2), transparent 70%);
+  opacity:.35;
+}
+body::after{
+  width:460px; height:460px; bottom:-200px; left:-160px;
+  background:radial-gradient(circle at 60% 60%, var(--accent), transparent 70%);
+  opacity:.22;
+}
+@media (prefers-reduced-motion: no-preference){
+  body::before{ animation: drift1 22s ease-in-out infinite alternate; }
+  body::after{ animation: drift2 26s ease-in-out infinite alternate; }
+}
+@keyframes drift1{ from{ transform:translate(0,0) scale(1); } to{ transform:translate(-40px,30px) scale(1.08); } }
+@keyframes drift2{ from{ transform:translate(0,0) scale(1); } to{ transform:translate(30px,-30px) scale(1.1); } }
+
+.wrap{max-width:780px; margin:0 auto; padding:36px 16px 72px; position:relative}
+h1,h2,h3{font-family:var(--font-display); font-weight:700; margin:0}
+.eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--fg-muted)}
+
+.hero{display:flex; flex-direction:column; gap:10px; margin-bottom:28px}
+.topbar{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.brand{
+  font-size:clamp(30px,6.5vw,40px); line-height:1; font-weight:800; letter-spacing:-.01em;
+  background:linear-gradient(120deg, var(--accent-dark), var(--accent) 60%, var(--accent-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.badge{
+  font-family:var(--font-mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+  border:1px solid var(--border-strong); color:var(--accent-dark); background:var(--surface);
+  padding:5px 10px 5px 8px; border-radius:20px; white-space:nowrap; display:inline-flex; align-items:center; gap:6px;
+  box-shadow:var(--shadow-sm);
+}
+.live-dot{width:7px; height:7px; border-radius:50%; background:var(--good); position:relative; flex:none}
+@media (prefers-reduced-motion: no-preference){
+  .live-dot::after{
+    content:""; position:absolute; inset:-4px; border-radius:50%; border:1.5px solid var(--good);
+    animation:pulse-ring 1.8s ease-out infinite;
+  }
+}
+@keyframes pulse-ring{ 0%{ transform:scale(.6); opacity:.9 } 100%{ transform:scale(2.1); opacity:0 } }
+.tagline{color:var(--fg-muted); font-size:15.5px; max-width:52ch}
+
+.stepper{display:flex; align-items:flex-start; gap:4px; margin-bottom:30px}
+.step{flex:1; display:flex; flex-direction:column; align-items:center; gap:7px; position:relative}
+.step-track{position:absolute; top:15px; left:50%; width:100%; height:2px; background:var(--border); z-index:0}
+.step:last-child .step-track{display:none}
+.step-track i{display:block; height:100%; width:0%; background:linear-gradient(90deg, var(--accent), var(--accent-2)); transition:width .5s ease}
+.step.done .step-track i{width:100%}
+.step-dot{
+  width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:var(--surface); border:2px solid var(--border-strong); color:var(--fg-muted);
+  font-family:var(--font-mono); font-weight:600; font-size:13px; z-index:1; transition:all .25s ease;
+}
+.step.active .step-dot{ border-color:var(--accent); color:var(--accent); background:var(--surface); box-shadow:0 0 0 5px color-mix(in srgb, var(--accent) 14%, transparent); }
+.step.done .step-dot{ border-color:var(--good); background:var(--good); color:#fff; }
+.step-label{font-family:var(--font-mono); font-size:11px; letter-spacing:.03em; color:var(--fg-muted); text-align:center}
+.step.active .step-label{color:var(--fg); font-weight:600}
+
+section[hidden]{display:none!important}
+.view{ }
+@media (prefers-reduced-motion: no-preference){
+  .view-enter{ animation:view-in .42s cubic-bezier(.22,.9,.3,1) both; }
+}
+@keyframes view-in{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
+
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px;
+  box-shadow:var(--shadow-sm); transition:box-shadow .25s ease, transform .25s ease;
+}
+.card + .card{margin-top:16px}
+.card h2{font-size:21px; margin-bottom:4px}
+.card .hint{color:var(--fg-muted); font-size:13.5px; margin-bottom:18px}
+.field{display:flex; flex-direction:column; gap:6px; margin-bottom:14px}
+.field label{font-size:13px; font-weight:600}
+.field .opt{font-weight:400; color:var(--fg-muted); font-size:12px}
+.field input, .field select, .field textarea{
+  font:inherit; font-size:15px; padding:11px 12px; border:1.5px solid var(--border); border-radius:10px;
+  background:var(--bg); color:var(--fg); width:100%; transition:border-color .2s ease, box-shadow .2s ease;
+}
+.field textarea{resize:vertical; min-height:56px}
+.field input:focus, .field select:focus, .field textarea:focus{
+  outline:none; border-color:var(--accent); box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:0 14px}
+.grid2 .field{min-width:0}
+@media (max-width:480px){.grid2{grid-template-columns:1fr}}
+
+.btn{
+  font-family:var(--font-body); font-weight:700; font-size:15px; padding:13px 22px; border-radius:11px; border:none;
+  background:linear-gradient(135deg, var(--accent), var(--accent-dark)); color:var(--accent-fg); cursor:pointer;
+  box-shadow:0 8px 20px -8px color-mix(in srgb, var(--accent) 60%, transparent);
+  transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
+  display:inline-flex; align-items:center; gap:8px;
+}
+.btn:hover{ transform:translateY(-1px); box-shadow:0 12px 26px -8px color-mix(in srgb, var(--accent) 65%, transparent); filter:brightness(1.04) }
+.btn:active{ transform:translateY(0); }
+.btn:disabled{opacity:.55; cursor:not-allowed; transform:none}
+.btn .arrow{transition:transform .2s ease}
+.btn:hover .arrow{transform:translateX(3px)}
+.btn.secondary{background:var(--surface); color:var(--fg); border:1.5px solid var(--border-strong); box-shadow:none}
+.btn.secondary:hover{border-color:var(--accent); color:var(--accent); box-shadow:var(--shadow-sm)}
+.btn.small{font-size:13px; padding:8px 14px; border-radius:9px}
+.btn-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:4px}
+
+.banner{font-family:var(--font-mono); font-size:12.5px; border-radius:10px; padding:11px 14px; margin-bottom:18px; display:flex; align-items:center; gap:8px}
+.banner.auto{background:var(--good-bg); color:var(--good); border:1px solid color-mix(in srgb, var(--good) 40%, transparent)}
+.banner.manual{background:var(--opp-bg); color:var(--opp); border:1px solid color-mix(in srgb, var(--opp) 40%, transparent)}
+.banner.error{background:var(--inv-bg); color:var(--inv); border:1px solid color-mix(in srgb, var(--inv) 40%, transparent)}
+
+.post-row{border:1.5px solid var(--border); border-radius:10px; padding:10px; margin-bottom:8px; display:grid; gap:8px; grid-template-columns:1fr 90px 90px 36px; transition:border-color .2s ease}
+.post-row:focus-within{border-color:var(--accent)}
+@media (max-width:560px){.post-row{grid-template-columns:1fr 1fr; grid-template-rows:auto auto}}
+.post-row input{font-size:13.5px; padding:8px 9px; border-radius:8px}
+.post-row .rm{background:transparent;border:1.5px solid var(--border-strong);border-radius:8px;color:var(--fg-muted);cursor:pointer;font-size:13px; transition:all .15s ease}
+.post-row .rm:hover{border-color:var(--inv); color:var(--inv)}
+
+.scan{padding:52px 22px; text-align:center}
+.radar{width:120px; height:120px; margin:0 auto 24px; position:relative}
+.radar .ring{position:absolute; inset:0; border-radius:50%; border:1.5px solid color-mix(in srgb, var(--accent) 35%, transparent)}
+.radar .ring:nth-child(2){inset:18px}
+.radar .ring:nth-child(3){inset:36px}
+.radar .core{position:absolute; inset:46px; border-radius:50%; background:linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent)}
+@media (prefers-reduced-motion: no-preference){
+  .radar .core{ animation:core-pulse 1.8s ease-in-out infinite; }
+  .radar .sweep{ animation:spin 2.4s linear infinite; }
+}
+.radar .sweep{
+  position:absolute; inset:0; border-radius:50%;
+  background:conic-gradient(from 0deg, color-mix(in srgb, var(--accent) 55%, transparent), transparent 28%);
+  mask:radial-gradient(circle, transparent 54%, black 55%);
+  -webkit-mask:radial-gradient(circle, transparent 54%, black 55%);
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+@keyframes core-pulse{ 0%,100%{ box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);} 50%{ box-shadow:0 0 0 14px transparent;} }
+.scan .gauge{width:100%; max-width:360px; height:6px; margin:8px auto 14px; border-radius:3px; background:var(--surface-2); overflow:hidden; box-shadow:inset 0 1px 2px rgba(16,42,115,.08)}
+.scan .gauge i{display:block; height:100%; width:0%; background:linear-gradient(90deg, var(--accent), var(--accent-2)); transition:width .3s ease; position:relative}
+.scan .line{font-family:var(--font-mono); font-size:13px; color:var(--fg-muted); min-height:18px}
+
+.report-head{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:10px}
+.report-head h2{font-size:27px}
+.handle{font-family:var(--font-mono); color:var(--fg-muted); font-size:13.5px}
+
+.donut-row{display:flex; align-items:center; gap:18px; margin:18px 0 8px; flex-wrap:wrap}
+.donut{ width:92px; height:92px; border-radius:50%; position:relative; flex:none;
+  transform:scale(.85); opacity:0; transition:transform .5s cubic-bezier(.22,1.3,.3,1), opacity .5s ease; }
+.donut.in{ transform:scale(1); opacity:1; }
+.donut::after{content:""; position:absolute; inset:14px; border-radius:50%; background:var(--surface); box-shadow:var(--shadow-sm); z-index:0}
+.donut-label{position:absolute; inset:14px; z-index:1; display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center}
+.donut-label b{font-family:var(--font-display); font-size:20px; line-height:1}
+.donut-label span{font-family:var(--font-mono); font-size:8.5px; color:var(--fg-muted); letter-spacing:.02em}
+.donut-legend{display:flex; flex-direction:column; gap:5px; font-size:12.5px}
+.donut-legend span{display:flex; align-items:center; gap:7px}
+.donut-legend i{width:9px; height:9px; border-radius:3px; display:inline-block}
+
+.lead{font-size:16px; line-height:1.6}
+
+.sec-title{font-family:var(--font-mono); font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--fg-muted);
+  margin:32px 0 12px; display:flex; align-items:center; gap:8px}
+.sec-title::after{content:""; flex:1; height:1px; background:var(--border)}
+
+.pillars{display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:12px}
+.pillar{
+  border:1px solid var(--border); border-radius:14px; padding:14px 15px; background:var(--surface);
+  transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; opacity:0; transform:translateY(10px);
+}
+@media (prefers-reduced-motion: no-preference){ .pillar.in{ animation:card-in .5s cubic-bezier(.22,.9,.3,1) forwards; } }
+@media (prefers-reduced-motion: reduce){ .pillar.in{ opacity:1; transform:none; } }
+@keyframes card-in{ to{ opacity:1; transform:translateY(0); } }
+.pillar:hover{ transform:translateY(-3px); box-shadow:var(--shadow-md); border-color:var(--border-strong); }
+.pillar .top-row{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px}
+.pillar .icon{width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex:none}
+.pillar .icon svg{width:16px; height:16px}
+.pillar .num{font-family:var(--font-mono); font-size:10.5px; color:var(--fg-muted)}
+.pillar .name{font-weight:700; font-size:14px; margin:2px 0 7px; line-height:1.25}
+.pillar .note{font-size:12.5px; color:var(--fg-muted); line-height:1.45}
+.status{display:inline-block; font-family:var(--font-mono); font-size:10px; letter-spacing:.03em; padding:2.5px 8px; border-radius:20px}
+.status.good{color:var(--good); background:var(--good-bg)}
+.status.opp{color:var(--opp); background:var(--opp-bg)}
+.status.inv{color:var(--inv); background:var(--inv-bg)}
+.icon.good{background:var(--good-bg); color:var(--good)}
+.icon.opp{background:var(--opp-bg); color:var(--opp)}
+.icon.inv{background:var(--inv-bg); color:var(--inv)}
+
+.gargalo{
+  border:1px solid var(--border); border-left:3px solid var(--inv); border-radius:4px 14px 14px 4px; padding:16px 18px;
+  background:var(--surface); transition:transform .2s ease, box-shadow .2s ease;
+}
+.gargalo:hover{ transform:translateX(2px); box-shadow:var(--shadow-sm); }
+.gargalo + .gargalo{margin-top:10px}
+.gargalo h3{font-size:16px; margin-bottom:9px}
+.kv{display:grid; grid-template-columns:96px 1fr; gap:5px 10px; font-size:13px; margin-top:3px}
+.kv dt{font-family:var(--font-mono); font-size:10.5px; letter-spacing:.03em; text-transform:uppercase; color:var(--fg-muted); padding-top:2px}
+.kv dd{margin:0; color:var(--fg)}
+
+.horizons{display:grid; grid-template-columns:repeat(3,1fr); gap:12px}
+@media (max-width:620px){.horizons{grid-template-columns:1fr}}
+.horizon{border:1px solid var(--border); border-radius:14px; padding:15px; background:var(--surface); transition:transform .2s ease, box-shadow .2s ease}
+.horizon:hover{ transform:translateY(-2px); box-shadow:var(--shadow-sm); }
+.horizon .htitle{font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--accent); margin-bottom:10px; font-weight:600}
+.action{border-top:1px solid var(--border); padding-top:10px; margin-top:10px}
+.action:first-of-type{border-top:none; padding-top:0; margin-top:0}
+.action .what{font-weight:700; font-size:13.5px}
+.action .why{font-size:12.5px; color:var(--fg-muted); margin-top:3px}
+.effort{display:inline-block; font-family:var(--font-mono); font-size:10px; letter-spacing:.03em; text-transform:uppercase;
+  border:1px solid var(--border-strong); border-radius:20px; padding:2px 8px; margin-top:7px; color:var(--fg-muted)}
+
+.indicadores{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px}
+.indicadores li{display:flex; gap:9px; align-items:baseline; font-size:13.5px}
+.indicadores li::before{content:"→"; color:var(--accent); font-family:var(--font-mono); font-weight:700}
+
+.gaps{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px}
+.gaps li{display:flex; gap:9px; align-items:baseline; font-size:13.5px; color:var(--fg-muted)}
+.gaps li::before{content:"?"; font-family:var(--font-mono); color:var(--inv); font-weight:700}
+
+.conclusion{
+  background:linear-gradient(135deg, var(--surface-2), var(--surface)); border:1px solid var(--border);
+  border-radius:14px; padding:18px; font-size:14.5px; line-height:1.6; position:relative; overflow:hidden;
+}
+.conclusion::before{content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:linear-gradient(var(--accent), var(--accent-2))}
+
+.report-foot{margin-top:32px; display:flex; gap:10px; flex-wrap:wrap}
+footer.disclaimer{margin-top:42px; font-family:var(--font-mono); font-size:11px; color:var(--fg-muted); line-height:1.7; border-top:1px solid var(--border); padding-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="topbar">
+      <div class="brand">InstaScan</div>
+      <div class="badge"><span class="live-dot"></span>diagnóstico ao vivo</div>
+    </div>
+    <p class="tagline">Diagnóstico comercial de perfis do Instagram para empresas do comércio e da indústria — bio, conversão e plano de ação, em minutos.</p>
+  </div>
+
+  <div class="stepper">
+    <div class="step active" data-step-tab="1">
+      <div class="step-track"><i></i></div>
+      <div class="step-dot">1</div>
+      <div class="step-label">Negócio</div>
+    </div>
+    <div class="step" data-step-tab="2">
+      <div class="step-track"><i></i></div>
+      <div class="step-dot">2</div>
+      <div class="step-label">Perfil</div>
+    </div>
+    <div class="step" data-step-tab="3">
+      <div class="step-track"><i></i></div>
+      <div class="step-dot">3</div>
+      <div class="step-label">Diagnóstico</div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 1: NEGÓCIO ===== -->
+  <section id="view-negocio" class="view">
+    <form id="form-negocio">
+      <div class="card">
+        <h2>Perfil a analisar</h2>
+        <p class="hint">O @ público do Instagram. Vamos tentar buscar os dados automaticamente; se não der, você digita rapidinho.</p>
+        <div class="field">
+          <label for="handle">@ do Instagram</label>
+          <input id="handle" placeholder="ex: metalurgicaboavista" required>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Sobre o negócio</h2>
+        <p class="hint">Quanto mais contexto, mais preciso fica o diagnóstico — mas nada aqui é obrigatório.</p>
+
+        <div class="grid2">
+          <div class="field">
+            <label for="empresa">Nome da empresa</label>
+            <input id="empresa" placeholder="ex: Metalúrgica Boa Vista">
+          </div>
+          <div class="field">
+            <label for="segmento">Segmento <span class="opt">(o que vende)</span></label>
+            <input id="segmento" placeholder="ex: estruturas metálicas sob encomenda">
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="field">
+            <label for="regiao">Região atendida</label>
+            <input id="regiao" placeholder="ex: Naviraí-MS e região">
+          </div>
+          <div class="field">
+            <label for="publico">Público-alvo</label>
+            <input id="publico" placeholder="ex: construtoras e indústrias da região">
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="field">
+            <label for="objetivo">Objetivo comercial principal</label>
+            <select id="objetivo">
+              <option>Receber pedidos de orçamento</option>
+              <option>Gerar vendas diretas</option>
+              <option>Agendar visita técnica</option>
+              <option>Aumentar reconhecimento de marca</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="ticket">Ticket médio <span class="opt">(se souber)</span></label>
+            <input id="ticket" placeholder="ex: R$ 15.000 a R$ 80.000">
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="field">
+            <label for="canal">Como acontece a venda</label>
+            <select id="canal">
+              <option>WhatsApp + visita técnica</option>
+              <option>Direct do Instagram</option>
+              <option>Site / formulário</option>
+              <option>Loja física</option>
+              <option>Equipe comercial externa</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="dificuldade">Principal dificuldade percebida</label>
+            <input id="dificuldade" placeholder="ex: poucas mensagens pelo Instagram">
+          </div>
+        </div>
+      </div>
+
+      <button class="btn" type="submit">Buscar perfil <span class="arrow">→</span></button>
+    </form>
+  </section>
+
+  <!-- ===== STEP 2: PERFIL (auto ou manual) ===== -->
+  <section id="view-perfil" class="view" hidden>
+    <div class="card">
+      <div id="perfil-banner"></div>
+      <h2>Dados do perfil</h2>
+      <p class="hint">Confira ou preencha os dados abaixo antes de gerar o diagnóstico.</p>
+
+      <div class="field">
+        <label for="p-bio">Biografia</label>
+        <textarea id="p-bio" placeholder="cole ou digite a bio do perfil"></textarea>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="p-seguidores">Seguidores</label>
+          <input id="p-seguidores" type="text" placeholder="ex: 2400">
+        </div>
+        <div class="field">
+          <label for="p-link">Link da bio</label>
+          <input id="p-link" type="text" placeholder="ex: wa.me/55... ou (sem link)">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Posts recentes <span class="opt">(legenda + curtidas + comentários — até 5)</span></label>
+        <div id="posts-list"></div>
+        <button type="button" class="btn secondary small" id="btn-add-post">+ adicionar post</button>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn secondary" id="btn-back-negocio" type="button">Voltar</button>
+      <button class="btn" id="btn-run-diagnostico" type="button">Gerar diagnóstico <span class="arrow">→</span></button>
+    </div>
+  </section>
+
+  <!-- ===== SCANNING STATE ===== -->
+  <section id="view-scan" class="view" hidden>
+    <div class="card scan">
+      <div class="radar">
+        <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+        <div class="sweep"></div>
+        <div class="core"></div>
+      </div>
+      <div class="eyebrow">Auditando os 12 pilares</div>
+      <div class="gauge"><i id="scan-bar"></i></div>
+      <div class="line" id="scan-line">Enviando dados pra IA…</div>
+    </div>
+  </section>
+
+  <!-- ===== STEP 3: REPORT ===== -->
+  <section id="view-report" class="view" hidden>
+    <div class="report-head">
+      <h2>Relatório de diagnóstico</h2>
+      <span class="handle" id="report-handle">@</span>
+    </div>
+
+    <div class="donut-row">
+      <div class="donut" id="r-donut">
+        <div class="donut-label"><b id="r-donut-num">–</b><span>pontos</span></div>
+      </div>
+      <div class="donut-legend">
+        <span><i style="background:var(--good)"></i> Consistente</span>
+        <span><i style="background:var(--opp)"></i> Oportunidade</span>
+        <span><i style="background:var(--inv)"></i> Investigar</span>
+      </div>
+    </div>
+
+    <div class="sec-title">Resumo executivo</div>
+    <p class="lead" id="r-resumo"></p>
+
+    <div class="sec-title">Mapa dos 12 pilares</div>
+    <div class="pillars" id="r-pilares"></div>
+
+    <div class="sec-title">Principais gargalos</div>
+    <div id="r-gargalos"></div>
+
+    <div class="sec-title">Plano de ação priorizado</div>
+    <div class="horizons" id="r-horizontes"></div>
+
+    <div class="sec-title">Indicadores de acompanhamento</div>
+    <ul class="indicadores" id="r-indicadores"></ul>
+
+    <div class="sec-title">Informações ainda necessárias</div>
+    <ul class="gaps" id="r-gaps"></ul>
+
+    <div class="sec-title">Conclusão estratégica</div>
+    <p class="conclusion" id="r-conclusao"></p>
+
+    <div class="report-foot">
+      <button class="btn secondary" id="btn-restart">Nova análise</button>
+    </div>
+
+    <footer class="disclaimer">
+      Diagnóstico gerado por IA a partir dos dados informados. Pode conter imprecisões — use como ponto de partida, não como verdade absoluta.
+    </footer>
+  </section>
+
+  <div id="error-box" hidden class="card" style="margin-top:16px;border-color:var(--inv)"></div>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var PILLAR_TITLES = [
+  "Posicionamento e clareza da marca",
+  "Perfil e caminho de conversão",
+  "Conteúdo e estratégia editorial",
+  "Criativos, imagens e vídeos",
+  "Stories e relacionamento",
+  "Confiança e prova social",
+  "Oferta e proposta comercial",
+  "Métricas e desempenho",
+  "Atendimento e processo de vendas",
+  "Concorrência e mercado",
+  "Distribuição e aquisição de público",
+  "Coerência entre marketing e negócio"
+];
+var STATUS_LABEL = {good:"CONSISTENTE", opp:"OPORTUNIDADE", inv:"INVESTIGAR"};
+var PILLAR_ICONS = [
+  '<circle cx="10" cy="10" r="7"/><circle cx="10" cy="10" r="3.3"/><circle cx="10" cy="10" r=".6" fill="currentColor" stroke="none"/>',
+  '<path d="M6 14 14 6"/><path d="M8 6h6v6"/>',
+  '<rect x="3" y="4" width="14" height="12" rx="1.5"/><path d="M3 8h14"/><path d="M7 8v8"/>',
+  '<rect x="3" y="4" width="14" height="12" rx="1.5"/><circle cx="7" cy="8" r="1.2"/><path d="M4 15l4.5-4.5L11 13l2-2 3 3.5"/>',
+  '<path d="M4 5h12a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H9l-3.5 3V13H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/>',
+  '<path d="M10 3l1.9 4.1 4.4.5-3.3 3 .9 4.4L10 12.9 6.1 15 7 10.6 3.7 7.6l4.4-.5z"/>',
+  '<path d="M11 3h4a1 1 0 0 1 1 1v4l-7.5 7.5a1 1 0 0 1-1.4 0L3.5 12a1 1 0 0 1 0-1.4L11 3z"/><circle cx="13" cy="6" r=".9" fill="currentColor" stroke="none"/>',
+  '<path d="M4 16V9"/><path d="M10 16V4"/><path d="M16 16v-6"/>',
+  '<path d="M4 11a6 6 0 0 1 12 0v3"/><rect x="2.5" y="11" width="3" height="4.5" rx="1"/><rect x="14.5" y="11" width="3" height="4.5" rx="1"/>',
+  '<circle cx="10" cy="10" r="7"/><path d="M12.5 7.5 11 11l-3.5 1.5L9 9z"/>',
+  '<circle cx="7" cy="7" r="2.3"/><path d="M2.5 16c.5-3 2.3-4.5 4.5-4.5s4 1.5 4.5 4.5"/><circle cx="14" cy="8.2" r="1.8"/><path d="M12.5 12c1.9.2 3.2 1.6 3.6 4"/>',
+  '<path d="M4 6h3V4.5a1.3 1.3 0 0 1 2.6 0V6h3a1 1 0 0 1 1 1v3h-1.5a1.3 1.3 0 0 0 0 2.6H14v3a1 1 0 0 1-1 1h-3v-1.5a1.3 1.3 0 0 0-2.6 0V16H4a1 1 0 0 1-1-1v-3h1.5a1.3 1.3 0 0 0 0-2.6H3V7a1 1 0 0 1 1-1z"/>'
+];
+function icon(svgInner){
+  return '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'+svgInner+'</svg>';
+}
+
+var state = { handle:"", negocio:{}, perfil:{fonte:"manual", posts:[]} };
+
+function $(id){ return document.getElementById(id); }
+function el(tag, cls, html){ var e=document.createElement(tag); if(cls) e.className=cls; if(html!==undefined) e.innerHTML=html; return e; }
+
+function showView(id){
+  ["view-negocio","view-perfil","view-scan","view-report"].forEach(function(v){
+    var node = $(v);
+    node.hidden = (v !== id);
+    node.classList.remove("view-enter");
+  });
+  var active = $(id);
+  void active.offsetWidth;
+  active.classList.add("view-enter");
+}
+function setStep(n){
+  [1,2,3].forEach(function(i){
+    var tab = document.querySelector('[data-step-tab="'+i+'"]');
+    tab.className = "step" + (i===n ? " active" : (i<n ? " done" : ""));
+  });
+}
+function showError(msg){
+  var box = $("error-box");
+  box.hidden = false;
+  box.innerHTML = '<strong style="color:var(--inv)">Ops.</strong><p style="margin:8px 0 0;color:var(--fg-muted);font-size:14px">'+msg+'</p>';
+  box.scrollIntoView({behavior:"smooth", block:"center"});
+}
+function clearError(){ $("error-box").hidden = true; }
+
+// ---------- posts editor (step 2) ----------
+function addPostRow(data){
+  data = data || {};
+  var list = $("posts-list");
+  if (list.children.length >= 5) return;
+  var row = el("div","post-row");
+  row.innerHTML =
+    '<input class="p-caption" placeholder="legenda do post" value="'+(data.caption||"").replace(/"/g,"&quot;")+'">'+
+    '<input class="p-likes" placeholder="curtidas" value="'+(data.likes??"")+'">'+
+    '<input class="p-comments" placeholder="coment." value="'+(data.comments??"")+'">'+
+    '<button type="button" class="rm" title="remover">✕</button>';
+  row.querySelector(".rm").addEventListener("click", function(){ row.remove(); });
+  list.appendChild(row);
+}
+function readPosts(){
+  var rows = document.querySelectorAll("#posts-list .post-row");
+  var posts = [];
+  rows.forEach(function(row){
+    var caption = row.querySelector(".p-caption").value.trim();
+    var likes = row.querySelector(".p-likes").value.trim();
+    var comments = row.querySelector(".p-comments").value.trim();
+    if (caption || likes || comments){
+      posts.push({ caption: caption, likes: likes ? Number(likes) : null, comments: comments ? Number(comments) : null });
+    }
+  });
+  return posts;
+}
+
+$("btn-add-post").addEventListener("click", function(){ addPostRow(); });
+
+// ---------- step 1 -> lookup ----------
+document.getElementById("form-negocio").addEventListener("submit", function(ev){
+  ev.preventDefault();
+  clearError();
+
+  var handle = $("handle").value.trim().replace(/^@/,"");
+  if (!handle){ showError("Informe o @ do Instagram."); return; }
+
+  state.handle = handle;
+  state.negocio = {
+    empresa: $("empresa").value.trim(),
+    segmento: $("segmento").value.trim(),
+    regiao: $("regiao").value.trim(),
+    publico: $("publico").value.trim(),
+    objetivo: $("objetivo").value,
+    ticket: $("ticket").value.trim(),
+    canal: $("canal").value,
+    dificuldade: $("dificuldade").value.trim()
+  };
+
+  setStep(2);
+  showView("view-perfil");
+  $("perfil-banner").innerHTML = '<div class="banner manual">Buscando @'+handle+' automaticamente…</div>';
+  $("posts-list").innerHTML = "";
+  $("p-bio").value = ""; $("p-seguidores").value = ""; $("p-link").value = "";
+
+  fetch("/api/instagram-lookup?handle="+encodeURIComponent(handle))
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res.ok){
+        state.perfil = res.data;
+        $("perfil-banner").innerHTML = '<div class="banner auto">Dados encontrados automaticamente. Confira antes de continuar.</div>';
+        $("p-bio").value = res.data.bio || "";
+        $("p-seguidores").value = res.data.seguidores ?? "";
+        $("p-link").value = res.data.link || "";
+        $("posts-list").innerHTML = "";
+        (res.data.posts || []).slice(0,5).forEach(addPostRow);
+        if (!(res.data.posts||[]).length) addPostRow();
+      } else {
+        state.perfil = {fonte:"manual", posts:[]};
+        $("perfil-banner").innerHTML = '<div class="banner manual">Não consegui buscar automaticamente (comum — Instagram bloqueia esse tipo de acesso às vezes). Preencha olhando o perfil no celular ou no app.</div>';
+        addPostRow();
+      }
+    })
+    .catch(function(){
+      state.perfil = {fonte:"manual", posts:[]};
+      $("perfil-banner").innerHTML = '<div class="banner manual">Não consegui buscar automaticamente. Preencha manualmente abaixo.</div>';
+      addPostRow();
+    });
+});
+
+$("btn-back-negocio").addEventListener("click", function(){
+  setStep(1); showView("view-negocio"); clearError();
+});
+
+// ---------- step 2 -> analyze ----------
+$("btn-run-diagnostico").addEventListener("click", function(){
+  clearError();
+  var payload = {
+    handle: state.handle,
+    negocio: state.negocio,
+    instagramData: {
+      fonte: state.perfil.fonte === "auto" ? "auto" : "manual",
+      bio: $("p-bio").value.trim(),
+      seguidores: $("p-seguidores").value.trim(),
+      link: $("p-link").value.trim(),
+      posts: readPosts()
+    }
+  };
+
+  setStep(3);
+  showView("view-scan");
+  var lines = [
+    "Enviando dados pra IA…",
+    "Auditando pilares de posicionamento e conversão…",
+    "Investigando gargalos da jornada comercial…",
+    "Priorizando o plano de ação…",
+    "Montando o relatório…"
+  ];
+  var bar = $("scan-bar"), line = $("scan-line"), i = 0;
+  bar.style.width = "0%";
+  var timer = setInterval(function(){
+    i = Math.min(i+1, lines.length-1);
+    line.textContent = lines[i];
+    bar.style.width = Math.round(((i+1)/lines.length)*85) + "%";
+  }, 900);
+
+  fetch("/api/analyze", {
+    method:"POST",
+    headers:{"content-type":"application/json"},
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){ return r.json().then(function(json){ return {ok:r.ok, json:json}; }); })
+  .then(function(res){
+    clearInterval(timer);
+    bar.style.width = "100%";
+    if (!res.ok){
+      setStep(2); showView("view-perfil");
+      showError(res.json.error || "Erro ao gerar o diagnóstico.");
+      return;
+    }
+    renderReport(res.json);
+    setStep(3); showView("view-report");
+    window.scrollTo({top:0, behavior:"smooth"});
+  })
+  .catch(function(err){
+    clearInterval(timer);
+    setStep(2); showView("view-perfil");
+    showError("Falha de conexão com o servidor. Verifique a internet e tente de novo.");
+  });
+});
+
+// ---------- report rendering ----------
+function renderReport(payload){
+  var report = payload.report;
+  $("report-handle").textContent = "@" + payload.handle;
+  $("r-resumo").textContent = report.resumo_executivo || "";
+  $("r-conclusao").textContent = report.conclusao || "";
+
+  var counts = {good:0, opp:0, inv:0};
+  (report.pilares || []).forEach(function(p){ if(counts[p.status]!==undefined) counts[p.status]++; });
+  var total = (report.pilares||[]).length || 12;
+  var deg = {
+    good: Math.round((counts.good/total)*360),
+    opp: Math.round((counts.opp/total)*360)
+  };
+  var donut = $("r-donut");
+  var goodCss = getComputedStyle(document.documentElement).getPropertyValue('--good').trim();
+  var oppCss = getComputedStyle(document.documentElement).getPropertyValue('--opp').trim();
+  var invCss = getComputedStyle(document.documentElement).getPropertyValue('--inv').trim();
+  donut.style.background =
+    'conic-gradient(' + goodCss + ' 0deg ' + deg.good + 'deg, ' +
+    oppCss + ' ' + deg.good + 'deg ' + (deg.good+deg.opp) + 'deg, ' +
+    invCss + ' ' + (deg.good+deg.opp) + 'deg 360deg)';
+  $("r-donut-num").textContent = counts.opp + counts.inv;
+  donut.classList.remove("in");
+  void donut.offsetWidth;
+  requestAnimationFrame(function(){ donut.classList.add("in"); });
+
+  var pHost = $("r-pilares"); pHost.innerHTML = "";
+  (report.pilares || []).forEach(function(p, idx){
+    var card = el("div","pillar");
+    var status = STATUS_LABEL[p.status] ? p.status : "inv";
+    card.innerHTML =
+      '<div class="top-row"><div class="icon '+status+'">'+icon(PILLAR_ICONS[idx]||"")+'</div><span class="status '+status+'">'+STATUS_LABEL[status]+'</span></div>'+
+      '<div class="num">PILAR '+(idx+1)+'</div>'+
+      '<div class="name">'+(PILLAR_TITLES[idx]||"")+'</div>'+
+      '<div class="note">'+(p.nota||"")+'</div>';
+    card.style.animationDelay = (idx*45)+"ms";
+    pHost.appendChild(card);
+    requestAnimationFrame(function(){ card.classList.add("in"); });
+  });
+
+  var gHost = $("r-gargalos"); gHost.innerHTML = "";
+  (report.gargalos || []).forEach(function(g){
+    var card = el("div","gargalo");
+    card.innerHTML =
+      '<h3>'+(g.titulo||"")+'</h3>'+
+      '<dl class="kv">'+
+        '<dt>Evidência</dt><dd>'+(g.evidencia||"")+'</dd>'+
+        '<dt>Impacto</dt><dd>'+(g.impacto||"")+'</dd>'+
+        '<dt>Confiança</dt><dd>'+(g.confianca||"")+'</dd>'+
+        '<dt>Verificar</dt><dd>'+(g.verificar||"")+'</dd>'+
+      '</dl>';
+    gHost.appendChild(card);
+  });
+
+  var hHost = $("r-horizontes"); hHost.innerHTML = "";
+  var horizons = [
+    {key:"imediato", titulo:"Imediato — 7 dias"},
+    {key:"curto", titulo:"Curto prazo — 30 dias"},
+    {key:"medio", titulo:"Médio prazo — 60 a 90 dias"}
+  ];
+  horizons.forEach(function(h){
+    var col = el("div","horizon");
+    var inner = '<div class="htitle">'+h.titulo+'</div>';
+    ((report.plano_acao||{})[h.key] || []).forEach(function(a){
+      inner += '<div class="action"><div class="what">'+(a.what||"")+'</div>'+
+               '<div class="why">'+(a.why||"")+'</div>'+
+               '<span class="effort">Esforço: '+(a.effort||"")+'</span></div>';
+    });
+    col.innerHTML = inner;
+    hHost.appendChild(col);
+  });
+
+  var iHost = $("r-indicadores"); iHost.innerHTML = "";
+  (report.indicadores || []).forEach(function(t){ iHost.appendChild(el("li", null, t)); });
+
+  var gapHost = $("r-gaps"); gapHost.innerHTML = "";
+  (report.informacoes_necessarias || []).forEach(function(t){ gapHost.appendChild(el("li", null, t)); });
+}
+
+$("btn-restart").addEventListener("click", function(){
+  clearError();
+  setStep(1); showView("view-negocio");
+  window.scrollTo({top:0, behavior:"smooth"});
+});
+
+// boot
+showView("view-negocio"); setStep(1);
+})();
+</script>
+</body>
+</html>

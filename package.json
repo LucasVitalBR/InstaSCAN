@@ -1,0 +1,9 @@
+{
+  "name": "instascan-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "InstaScan - diagnóstico comercial de perfis do Instagram por IA",
+  "scripts": {
+    "dev": "vercel dev"
+  }
+}
