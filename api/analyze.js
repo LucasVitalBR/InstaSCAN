@@ -103,6 +103,7 @@ exatamente este formato:
 
 {
   "perfil_lido": { "handle": "@ do perfil (lido do print ou informado)", "nome": "", "seguidores": "", "seguindo": "", "publicacoes": "" },
+  "nota_geral": 0, // inteiro de 0 a 100 que resume a saúde comercial do perfil, coerente com os status dos 12 pilares
   "resumo_executivo": "2 a 4 frases em linguagem simples sobre a situação do perfil e as oportunidades mais relevantes",
   "pilares": [
     { "status": "good" | "opp" | "inv", "nota": "1-2 frases de justificativa, citando evidência" }
@@ -276,6 +277,13 @@ function validateReport(report) {
     const obj = p && typeof p === "object" ? p : { nota: String(p || "") };
     return { status: map[String(obj.status || "").toLowerCase()] || "inv", nota: obj.nota || obj.justificativa || "" };
   });
+  const n = Number(report.nota_geral);
+  if (!Number.isFinite(n) || n < 0 || n > 100) {
+    const w = { good: 1, opp: 0.5, inv: 0.25 };
+    report.nota_geral = Math.round((report.pilares.reduce((a, p) => a + (w[p.status] ?? 0.25), 0) / PILLAR_TITLES.length) * 100);
+  } else {
+    report.nota_geral = Math.round(n);
+  }
   return report;
 }
 
