@@ -262,6 +262,17 @@ h2{margin:0;font-weight:600;font-size:clamp(24px,6vw,34px);letter-spacing:-.02em
 .gate-card{width:100%;max-width:400px;border-radius:32px;padding:26px 22px;display:flex;flex-direction:column;gap:14px;text-align:center;background:linear-gradient(180deg,rgba(43,47,179,.6),rgba(11,16,51,.92))}
 .gate-card .mark{width:58px;height:58px;margin:0 auto}
 .gate-card .handle-wrap input{text-align:center;letter-spacing:.06em;padding:15px 18px;font-weight:500}
+.gate-card{position:relative}
+.gate-card #gate-in,.gate-card #gate-out{display:flex;flex-direction:column;gap:14px}
+.gate-card h2{margin:0}
+.gate-x{position:absolute;top:12px;right:12px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(255,255,255,.08);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.gate-x:hover{background:rgba(255,255,255,.16)}
+.gate-x svg{width:18px;height:18px}
+.user-pill{display:inline-flex;align-items:center;gap:8px;color:var(--text);cursor:pointer;min-height:40px;font:inherit;font-size:13.5px;font-weight:500;padding:8px 14px}
+.user-pill:hover{background:rgba(255,255,255,.16)}
+.user-pill .dot-on{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.user-pill.on .dot-on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.user-pill.on #user-label b{color:var(--orange-hi);font-weight:600}
 .gate-err{margin:0;min-height:20px;font-size:14px;color:var(--orange-hi)}
 .dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:50;border-radius:999px;padding:8px 10px;display:flex;align-items:center;gap:6px}
 .dock button{width:50px;height:50px;border-radius:50%;border:none;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}
@@ -299,7 +310,7 @@ h2{margin:0;font-weight:600;font-size:clamp(24px,6vw,34px);letter-spacing:-.02em
 <header class="top">
   <div class="wrap">
     <a class="logo" href="#" id="go-home" aria-label="InstaScan, início"><svg class="mark" viewBox="0 0 120 120" aria-hidden="true"><g fill="none" stroke-linecap="round" stroke-width="10"><g stroke="#45D4FF"><path d="M12 36 V24 A12 12 0 0 1 24 12 H36"/><path d="M84 12 H96 A12 12 0 0 1 108 24 V36"/><path d="M108 84 V96 A12 12 0 0 1 96 108 H84"/><path d="M36 108 H24 A12 12 0 0 1 12 96 V84"/></g><g stroke="#FF6B1F"><circle cx="60" cy="60" r="11"/><path d="M71 52 V64 A8 8 0 0 0 87 64 V60 A27 27 0 1 0 76.5 81.5"/></g></g></svg><span class="word">insta<b>scan</b></span></a>
-    <span class="pill glass"><b>Mundo SENAI</b> 2026</span>
+    <button type="button" class="pill glass user-pill" id="user-pill" aria-haspopup="dialog"><span class="dot-on" aria-hidden="true"></span><span id="user-label">Entrar</span></button>
   </div>
 </header>
 
@@ -556,12 +567,21 @@ h2{margin:0;font-weight:600;font-size:clamp(24px,6vw,34px);letter-spacing:-.02em
 
 <div class="gate" id="gate" hidden>
   <form class="gate-card glass" id="gate-form" novalidate>
+    <button type="button" class="gate-x" id="gate-close" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <svg class="mark" viewBox="0 0 120 120" aria-hidden="true"><g fill="none" stroke-linecap="round" stroke-width="10"><g stroke="#45D4FF"><path d="M12 36 V24 A12 12 0 0 1 24 12 H36"/><path d="M84 12 H96 A12 12 0 0 1 108 24 V36"/><path d="M108 84 V96 A12 12 0 0 1 96 108 H84"/><path d="M36 108 H24 A12 12 0 0 1 12 96 V84"/></g><g stroke="#FF6B1F"><circle cx="60" cy="60" r="11"/><path d="M71 52 V64 A8 8 0 0 0 87 64 V60 A27 27 0 1 0 76.5 81.5"/></g></g></svg>
-    <h2 id="gate-title">Código do evento</h2>
-    <p class="mini">Digite o seu código para usar o InstaScan neste celular. Você só faz isso uma vez.</p>
-    <div class="handle-wrap"><input id="gate-code" placeholder="ex: INSTANOME26" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-labelledby="gate-title"></div>
-    <p class="gate-err" id="gate-err" role="alert"></p>
-    <button class="btn main wide" id="gate-btn" type="submit">Entrar</button>
+    <div id="gate-in">
+      <h2 id="gate-title">Entrar no InstaScan</h2>
+      <p class="mini">Digite o seu código do evento. Você só faz isso uma vez neste celular.</p>
+      <div class="handle-wrap"><input id="gate-code" placeholder="ex: INSTANOME26" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-labelledby="gate-title"></div>
+      <p class="gate-err" id="gate-err" role="alert"></p>
+      <button class="btn main wide" id="gate-btn" type="submit">Entrar</button>
+    </div>
+    <div id="gate-out" hidden>
+      <h2>Olá, <span id="gate-name"></span></h2>
+      <p class="mini">Você está conectado e pode fazer as análises neste celular.</p>
+      <button class="btn main wide" id="gate-ok" type="button">Continuar</button>
+      <button class="btn ghost glass wide" id="gate-logout" type="button">Sair deste celular</button>
+    </div>
   </form>
 </div>
 
@@ -584,16 +604,36 @@ var STATUS = { good:"forte", opp:"ajustar", inv:"verificar" };
 var state = { handle:"", negocio:{}, images:[], lastReport:null };
 
 /* ---------- código do evento ---------- */
-var CODE_KEY = "instascan_event_code";
-function getCode(){ try { return localStorage.getItem(CODE_KEY) || ""; } catch(e){ return state._code || ""; } }
-function setCode(v){ state._code = v; try { if (v) localStorage.setItem(CODE_KEY, v); else localStorage.removeItem(CODE_KEY); } catch(e){} }
+var CODE_KEY = "instascan_event_code", NAME_KEY = "instascan_user_name";
+function store(k, v){ try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch(e){} state["_"+k] = v; }
+function load(k){ try { return localStorage.getItem(k) || ""; } catch(e){ return state["_"+k] || ""; } }
+function getCode(){ return load(CODE_KEY); }
+function setCode(v){ store(CODE_KEY, v); if (!v) store(NAME_KEY, ""); renderUser(); }
 function authHeaders(extra){ var h = extra || {}; h["x-event-code"] = getCode(); return h; }
-function openGate(msg){
-  $("gate").hidden = false; $("gate-err").textContent = msg || "";
-  setTimeout(function(){ $("gate-code").focus(); }, 50);
+function renderUser(){
+  var on = !!getCode(), nome = load(NAME_KEY);
+  $("user-pill").classList.toggle("on", on);
+  $("user-label").innerHTML = on ? 'Olá, <b>' + esc(nome || "conectado") + '</b>' : "Entrar";
+  $("user-pill").setAttribute("aria-label", on ? "Conectado" + (nome ? " como " + nome : "") + ". Abrir opções" : "Entrar com o código do evento");
 }
+function openGate(msg){
+  var on = !!getCode();
+  $("gate-in").hidden = on; $("gate-out").hidden = !on;
+  $("gate-name").textContent = load(NAME_KEY) || "conectado";
+  $("gate-err").textContent = msg || "";
+  $("gate").hidden = false;
+  setTimeout(function(){ (on ? $("gate-ok") : $("gate-code")).focus(); }, 50);
+}
+function closeGate(){ $("gate").hidden = true; }
+$("user-pill").addEventListener("click", function(){ openGate(); });
+$("gate-close").addEventListener("click", closeGate);
+$("gate-ok").addEventListener("click", closeGate);
+$("gate").addEventListener("click", function(e){ if (e.target === $("gate")) closeGate(); });
+$("gate").addEventListener("keydown", function(e){ if (e.key === "Escape") closeGate(); });
+$("gate-logout").addEventListener("click", function(){ setCode(""); openGate(); });
 $("gate-form").addEventListener("submit", function(e){
   e.preventDefault();
+  if (getCode()) { closeGate(); return; }
   var code = $("gate-code").value.trim().toUpperCase();
   if (!code){ $("gate-err").textContent = "Digite o código."; return; }
   var btn = $("gate-btn"); btn.disabled = true; btn.textContent = "Conferindo…";
@@ -601,12 +641,26 @@ $("gate-form").addEventListener("submit", function(e){
     .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }); })
     .then(function(res){
       btn.disabled = false; btn.textContent = "Entrar";
-      if (res.ok){ setCode(code); $("gate").hidden = true; $("gate-code").value = ""; }
-      else { $("gate-err").textContent = res.j.error || "Código inválido."; }
+      if (res.ok){
+        store(NAME_KEY, res.j.nome || ""); setCode(code); $("gate-code").value = "";
+        openGate();
+      } else { $("gate-err").textContent = res.j.error || "Código inválido."; }
     })
     .catch(function(){ btn.disabled = false; btn.textContent = "Entrar"; $("gate-err").textContent = "Sem conexão. Confira a internet e tente de novo."; });
 });
+renderUser();
 if (!getCode()) openGate();
+else if (!load(NAME_KEY)) {
+  fetch("/api/check-code", { method:"POST", headers: authHeaders() })
+    .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }); })
+    .then(function(res){ if (res.ok){ store(NAME_KEY, res.j.nome || ""); renderUser(); } else if (res.j && res.j.error){ setCode(""); openGate(res.j.error); } })
+    .catch(function(){});
+}
+function needLogin(){
+  if (getCode()) return false;
+  openGate("Entre com o seu código do evento para fazer a análise.");
+  return true;
+}
 
 function showView(id){
   ["view-home","view-perfil","view-scan","view-report"].forEach(function(v){ $(v).hidden = (v !== id); });
@@ -792,6 +846,7 @@ function readNegocio(){
 
 $("form-home").addEventListener("submit", function(ev){
   ev.preventDefault(); clearErrors(); homeBanner("");
+  if (needLogin()) return;
   var handle = $("handle").value.trim().replace(/^@/, "").replace(/\s+/g, "");
   state.handle = handle; state.negocio = readNegocio();
   if (state.images.length){
@@ -829,6 +884,7 @@ $("link-manual").addEventListener("click", function(e){
 $("btn-back").addEventListener("click", function(){ clearErrors(); showView("view-home"); });
 $("btn-run-manual").addEventListener("click", function(){
   clearErrors();
+  if (needLogin()) return;
   runAnalysis({ handle: state.handle, negocio: state.negocio, instagramData: { fonte:"manual", bio:$("p-bio").value.trim(), seguidores:$("p-seguidores").value.trim(), link:$("p-link").value.trim(), posts: readPosts() }, images: [] }, "view-perfil");
 });
 

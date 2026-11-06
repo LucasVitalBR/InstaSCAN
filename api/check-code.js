@@ -13,5 +13,9 @@ module.exports = async function handler(req, res) {
     res.status(r.status).json({ ok: false, error: r.error });
     return;
   }
-  res.status(200).json({ ok: true });
+  // Nome de quem entrou, tirado do próprio código no formato INSTA + NOME + 26.
+  const raw = String(req.headers["x-event-code"] || "").trim().toUpperCase();
+  const m = /^INSTA([A-ZÀ-Ý]{2,20})\d{2}$/.exec(raw);
+  const nome = m ? m[1].charAt(0) + m[1].slice(1).toLowerCase() : "";
+  res.status(200).json({ ok: true, nome });
 };
