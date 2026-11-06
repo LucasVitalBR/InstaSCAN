@@ -258,6 +258,11 @@ h2{margin:0;font-weight:600;font-size:clamp(24px,6vw,34px);letter-spacing:-.02em
 .conclusao{border-radius:24px;padding:16px 18px;margin-top:16px;font-size:16px;line-height:1.55;border-color:rgba(255,107,31,.4)}
 .conclusao b{display:block;color:var(--orange-hi);margin-bottom:4px;font-size:14px}
 
+.gate{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-left,0px));background:rgba(7,11,36,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.gate-card{width:100%;max-width:400px;border-radius:32px;padding:26px 22px;display:flex;flex-direction:column;gap:14px;text-align:center;background:linear-gradient(180deg,rgba(43,47,179,.6),rgba(11,16,51,.92))}
+.gate-card .mark{width:58px;height:58px;margin:0 auto}
+.gate-card .handle-wrap input{text-align:center;letter-spacing:.06em;padding:15px 18px;font-weight:500}
+.gate-err{margin:0;min-height:20px;font-size:14px;color:var(--orange-hi)}
 .dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:50;border-radius:999px;padding:8px 10px;display:flex;align-items:center;gap:6px}
 .dock button{width:50px;height:50px;border-radius:50%;border:none;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}
 .dock button:hover{background:rgba(255,255,255,.14)}
@@ -537,7 +542,7 @@ h2{margin:0;font-weight:600;font-size:clamp(24px,6vw,34px);letter-spacing:-.02em
       </div>
       <div>
         <h3>Uso e privacidade</h3>
-        <p>As fotos enviadas servem só para gerar o diagnóstico. O InstaScan não guarda imagens nem resultados.</p>
+        <p>As fotos e dados enviados servem só para gerar o diagnóstico. O InstaScan não guarda imagens nem resultados. Para a análise, eles passam pela inteligência artificial da OpenAI, que pode mantê-los por até 30 dias só para prevenir abusos.</p>
         <p>O diagnóstico é gerado por IA a partir do que aparece no perfil: use como ponto de partida, não como avaliação definitiva.</p>
       </div>
     </div>
@@ -547,6 +552,17 @@ h2{margin:0;font-weight:600;font-size:clamp(24px,6vw,34px);letter-spacing:-.02em
     </div>
   </footer>
 </main>
+</div>
+
+<div class="gate" id="gate" hidden>
+  <form class="gate-card glass" id="gate-form" novalidate>
+    <svg class="mark" viewBox="0 0 120 120" aria-hidden="true"><g fill="none" stroke-linecap="round" stroke-width="10"><g stroke="#45D4FF"><path d="M12 36 V24 A12 12 0 0 1 24 12 H36"/><path d="M84 12 H96 A12 12 0 0 1 108 24 V36"/><path d="M108 84 V96 A12 12 0 0 1 96 108 H84"/><path d="M36 108 H24 A12 12 0 0 1 12 96 V84"/></g><g stroke="#FF6B1F"><circle cx="60" cy="60" r="11"/><path d="M71 52 V64 A8 8 0 0 0 87 64 V60 A27 27 0 1 0 76.5 81.5"/></g></g></svg>
+    <h2 id="gate-title">Código do evento</h2>
+    <p class="mini">Digite o seu código para usar o InstaScan neste celular. Você só faz isso uma vez.</p>
+    <div class="handle-wrap"><input id="gate-code" placeholder="ex: MUNDO26-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-labelledby="gate-title"></div>
+    <p class="gate-err" id="gate-err" role="alert"></p>
+    <button class="btn main wide" id="gate-btn" type="submit">Entrar</button>
+  </form>
 </div>
 
 <nav class="dock glass" aria-label="Atalhos">
@@ -566,6 +582,31 @@ var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)")
 var PILLAR_TITLES = ["Posicionamento e clareza da marca","Perfil e caminho de conversão","Conteúdo e estratégia editorial","Criativos, imagens e vídeos","Stories e relacionamento","Confiança e prova social","Oferta e proposta comercial","Métricas e desempenho","Atendimento e processo de vendas","Concorrência e mercado","Distribuição e aquisição de público","Coerência entre marca e oferta"];
 var STATUS = { good:"forte", opp:"ajustar", inv:"verificar" };
 var state = { handle:"", negocio:{}, images:[], lastReport:null };
+
+/* ---------- código do evento ---------- */
+var CODE_KEY = "instascan_event_code";
+function getCode(){ try { return localStorage.getItem(CODE_KEY) || ""; } catch(e){ return state._code || ""; } }
+function setCode(v){ state._code = v; try { if (v) localStorage.setItem(CODE_KEY, v); else localStorage.removeItem(CODE_KEY); } catch(e){} }
+function authHeaders(extra){ var h = extra || {}; h["x-event-code"] = getCode(); return h; }
+function openGate(msg){
+  $("gate").hidden = false; $("gate-err").textContent = msg || "";
+  setTimeout(function(){ $("gate-code").focus(); }, 50);
+}
+$("gate-form").addEventListener("submit", function(e){
+  e.preventDefault();
+  var code = $("gate-code").value.trim().toUpperCase();
+  if (!code){ $("gate-err").textContent = "Digite o código."; return; }
+  var btn = $("gate-btn"); btn.disabled = true; btn.textContent = "Conferindo…";
+  fetch("/api/check-code", { method:"POST", headers:{ "x-event-code": code } })
+    .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }); })
+    .then(function(res){
+      btn.disabled = false; btn.textContent = "Entrar";
+      if (res.ok){ setCode(code); $("gate").hidden = true; $("gate-code").value = ""; }
+      else { $("gate-err").textContent = res.j.error || "Código inválido."; }
+    })
+    .catch(function(){ btn.disabled = false; btn.textContent = "Entrar"; $("gate-err").textContent = "Sem conexão. Confira a internet e tente de novo."; });
+});
+if (!getCode()) openGate();
 
 function showView(id){
   ["view-home","view-perfil","view-scan","view-report"].forEach(function(v){ $(v).hidden = (v !== id); });
@@ -769,9 +810,10 @@ $("form-home").addEventListener("submit", function(ev){
     homeBanner(msg);
     $("home-banner").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
   }
-  fetch("/api/instagram-lookup?handle=" + encodeURIComponent(handle))
-    .then(function(r){ return r.json(); })
+  fetch("/api/instagram-lookup?handle=" + encodeURIComponent(handle), { headers: authHeaders() })
+    .then(function(r){ return r.json().then(function(j){ j._status = r.status; return j; }); })
     .then(function(res){
+      if (res.code === "event_code"){ clearInterval(lookTimer); showView("view-home"); setCode(""); openGate(res.error); return; }
       if (res.ok){ clearInterval(lookTimer); runAnalysis({ handle: handle, negocio: state.negocio, instagramData: res.data, images: [] }, "view-home"); return; }
       var why = /privada/i.test(res.error || "") ? "<b>@" + esc(handle) + "</b> é uma conta privada." : (/não encontrado/i.test(res.error || "") ? "Não achei o perfil <b>@" + esc(handle) + "</b>. Confira se o @ está certo." : "O Instagram não liberou a consulta de <b>@" + esc(handle) + "</b> agora.");
       lookupFailed(why + " Toque em <b>Fotografar perfil</b> e tire uma foto da tela inicial; depois toque em Analisar perfil.");
@@ -802,7 +844,7 @@ function runAnalysis(payload, backView){
   line.textContent = lines[0]; bar.style.width = "6%";
   var timer = setInterval(function(){ i = Math.min(i+1, lines.length-1); line.textContent = lines[i]; bar.style.width = Math.round(((i+1)/lines.length)*88) + "%"; }, hasImages ? 2400 : 1000);
   var errHost = backView === "view-perfil" ? "error-perfil" : "error-home";
-  fetch("/api/analyze", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(payload) })
+  fetch("/api/analyze", { method:"POST", headers: authHeaders({ "content-type":"application/json" }), body: JSON.stringify(payload) })
     .then(function(r){
       return r.text().then(function(txt){
         var json; try { json = JSON.parse(txt); }
@@ -812,6 +854,7 @@ function runAnalysis(payload, backView){
     })
     .then(function(res){
       clearInterval(timer); bar.style.width = "100%";
+      if (!res.ok && res.json.code === "event_code"){ showView(backView); setCode(""); openGate(res.json.error); return; }
       if (!res.ok){ showView(backView); showError(errHost, res.json.error || "Erro ao gerar o diagnóstico.", res.json.detail); return; }
       renderReport(res.json); showView("view-report");
     })

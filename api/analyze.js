@@ -125,12 +125,14 @@ exatamente este formato:
   "conclusao": "1-3 frases: o que priorizar agora e o que NÃO priorizar antes de resolver o gargalo principal"
 }`;
 
+const { checkEventCode, cleanHandle, sanitizeAnalyzeBody, setNoCors } = require("./_security");
 const MAX_IMAGES = 6;
+const MAX_IMAGE_CHARS = 1500000; // ~1,1 MB por imagem em base64
 
 function sanitizeImages(images) {
   if (!Array.isArray(images)) return [];
   return images
-    .filter((s) => typeof s === "string" && /^data:image\/(jpeg|jpg|png|webp);base64,/i.test(s))
+    .filter((s) => typeof s === "string" && s.length <= MAX_IMAGE_CHARS && /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/i.test(s))
     .slice(0, MAX_IMAGES);
 }
 
@@ -303,29 +305,32 @@ function friendlyError(msg) {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader("access-control-allow-origin", "*");
-  res.setHeader("access-control-allow-methods", "POST, OPTIONS");
-  res.setHeader("access-control-allow-headers", "content-type");
-
-  if (req.method === "OPTIONS") {
-    res.status(204).end();
-    return;
-  }
+  setNoCors(res);
   if (req.method !== "POST") {
     res.status(405).json({ error: "Método não permitido. Use POST." });
     return;
   }
+  const gate = checkEventCode(req);
+  if (!gate.ok) {
+    res.status(gate.status).json({ error: gate.error, code: "event_code" });
+    return;
+  }
 
   try {
-    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-    const handle = (body?.handle || "").trim().replace(/^@/, "");
-    const images = sanitizeImages(body?.images);
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
+    const handle = cleanHandle(body.handle);
+    if (handle === null) {
+      res.status(400).json({ error: "Esse @ não parece válido. Use só letras, números, ponto e sublinhado (até 30)." });
+      return;
+    }
+    const images = sanitizeImages(body.images);
     if (!handle && !images.length) {
       res.status(400).json({ error: "Informe o @ do Instagram ou envie uma foto da tela do perfil." });
       return;
     }
-
-    const userMessage = buildUserMessage(body, images.length);
+    const clean = sanitizeAnalyzeBody(body);
+    console.log(`análise: código nº ${gate.slot}, ${images.length ? "foto" : "@"}`);
+    const userMessage = buildUserMessage({ handle, instagramData: clean.instagramData, negocio: clean.negocio }, images.length);
 
     let report;
     if (process.env.ANTHROPIC_API_KEY) {
@@ -333,21 +338,18 @@ module.exports = async function handler(req, res) {
     } else if (process.env.OPENAI_API_KEY) {
       report = await callOpenAI(userMessage, images);
     } else {
-      res.status(500).json({
-        error:
-          "Nenhuma chave de IA configurada no servidor (ANTHROPIC_API_KEY ou OPENAI_API_KEY). Configure em Project Settings > Environment Variables no Vercel.",
-      });
+      res.status(500).json({ error: "Nenhuma chave de IA configurada no servidor." });
       return;
     }
 
     validateReport(report);
-    const finalHandle = handle || String(report?.perfil_lido?.handle || "").replace(/^@/, "");
+    const finalHandle = handle || String(report?.perfil_lido?.handle || "").replace(/^@/, "").slice(0, 30);
     res.status(200).json({ handle: finalHandle, pillarTitles: PILLAR_TITLES, report });
   } catch (err) {
-    console.error("Erro em /api/analyze:", err);
+    console.error("Erro em /api/analyze:", err && err.message);
     res.status(502).json({
       error: friendlyError(err?.message || err),
-      detail: String(err?.message || err).replace(/sk-[A-Za-z0-9_\-*]+/g, "sk-***").slice(0, 400),
+      detail: String(err?.message || err).replace(/sk-[A-Za-z0-9_\-*]+/g, "sk-***").replace(/apify_api_[A-Za-z0-9]+/g, "apify_api_***").slice(0, 400),
     });
   }
 };

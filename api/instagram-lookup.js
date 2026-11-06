@@ -1,3 +1,4 @@
+const { checkEventCode, cleanHandle, setNoCors } = require("./_security");
 // api/instagram-lookup.js
 // Tentativa de buscar dados públicos de um perfil do Instagram automaticamente, SEM chave
 // paga, usando o endpoint público não-oficial que o próprio site usa para montar a página
@@ -64,14 +65,11 @@ async function fetchPublicProfile(username) {
 // APIFY_TOKEN estiver configurada no Vercel. O plano gratuito da Apify dá créditos mensais
 // suficientes para um evento (cada perfil custa frações de centavo de dólar).
 async function fetchViaApify(username) {
-  const url =
-    "https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?token=" +
-    encodeURIComponent(process.env.APIFY_TOKEN) +
-    "&timeout=40";
+  const url = "https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?timeout=40";
   const resp = await withTimeout(
     fetch(url, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", authorization: "Bearer " + process.env.APIFY_TOKEN },
       body: JSON.stringify({ usernames: [username] }),
     }),
     45000
@@ -102,17 +100,20 @@ async function fetchViaApify(username) {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader("access-control-allow-origin", "*");
-  res.setHeader("access-control-allow-methods", "GET, OPTIONS");
-
-  if (req.method === "OPTIONS") {
-    res.status(204).end();
+  setNoCors(res);
+  if (req.method !== "GET") {
+    res.status(405).json({ ok: false, error: "Método não permitido." });
+    return;
+  }
+  const gate = checkEventCode(req);
+  if (!gate.ok) {
+    res.status(gate.status).json({ ok: false, error: gate.error, code: "event_code" });
     return;
   }
 
-  const handle = String(req.query?.handle || "").trim().replace(/^@/, "");
+  const handle = cleanHandle(req.query?.handle);
   if (!handle) {
-    res.status(400).json({ ok: false, error: "Informe o @ do Instagram." });
+    res.status(400).json({ ok: false, error: handle === null ? "Esse @ não parece válido." : "Informe o @ do Instagram." });
     return;
   }
 
@@ -130,8 +131,7 @@ module.exports = async function handler(req, res) {
     }
     res.status(200).json({ ok: true, data });
   } catch (err) {
-    // Falha esperada e comum (bloqueio, timeout, conta privada, etc.) - o frontend cai
-    // automaticamente para o preenchimento manual.
-    res.status(200).json({ ok: false, error: String(err?.message || err) });
+    // Falha esperada (bloqueio, conta privada, não encontrado): o app pede a foto.
+    res.status(200).json({ ok: false, error: String(err?.message || err).replace(/apify_api_[A-Za-z0-9]+/g, "apify_api_***").slice(0, 200) });
   }
 };
