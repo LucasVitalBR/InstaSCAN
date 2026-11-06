@@ -11,7 +11,7 @@ function normCode(v) {
 }
 
 // Confere o código do evento. A variável EVENT_CODE no Vercel pode ter um código só
-// ("MUNDO26") ou vários separados por vírgula, um por aluno ("MUNDO26-A7K,MUNDO26-Q3P").
+// ("INSTANOME26") ou vários separados por vírgula, um por pessoa ("CODIGOA,CODIGOB,CODIGOC").
 // Para cortar o acesso de um aluno, é só tirar o código dele da lista e republicar.
 // Se a variável não existir, bloqueia tudo: melhor o app parado do que aberto sem controle.
 function sameText(a, b) {
