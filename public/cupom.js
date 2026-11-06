@@ -7,7 +7,7 @@
     bg: "#070B24", indigo: "#2B2FB3", violet: "#6A35E8", text: "#F2F4FF", muted: "#AEB5DA",
     orange: "#FF8A47", orangeMark: "#FF6B1F", cyan: "#45D4FF", ok: "#4ADE9B", warn: "#FFB547"
   };
-  var W = 1080, H = 1740;
+  var W = 1080, BASE = 1650;
   var CORNERS = ["M12 36 V24 A12 12 0 0 1 24 12 H36", "M84 12 H96 A12 12 0 0 1 108 24 V36", "M108 84 V96 A12 12 0 0 1 96 108 H84", "M36 108 H24 A12 12 0 0 1 12 96 V84"];
   var AT_TAIL = "M71 52 V64 A8 8 0 0 0 87 64 V60 A27 27 0 1 0 76.5 81.5";
 
@@ -41,10 +41,33 @@
     ]).catch(function () {});
   }
 
+  function wrap(ctx, text, maxW) {
+    var words = String(text || "").replace(/\s+/g, " ").trim().split(" "), lines = [], line = "";
+    words.forEach(function (w) {
+      var t = line ? line + " " + w : w;
+      if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; } else { line = t; }
+    });
+    if (line) lines.push(line);
+    return lines;
+  }
+  function clip(text, max) { text = String(text || "").trim(); return text.length > max ? text.slice(0, max - 1).replace(/\s+\S*$/, "") + "…" : text; }
+
   function draw(canvas, d) {
+    var LEX = '"Lexend", system-ui, sans-serif', MONO = '"Martian Mono", ui-monospace, monospace';
+    // Mede o texto do resumo e da conclusão para saber a altura final da imagem.
+    var TX = 70, TW = 900 - TX * 2, LH = 50, TFONT = "300 34px " + LEX;
+    var m = document.createElement("canvas").getContext("2d"); m.font = TFONT;
+    var parts = [["Resumo", clip(d.r, 520)], ["Conclusão", clip(d.c, 520)]].filter(function (x) { return x[1]; })
+      .map(function (x) { return { title: x[0], lines: wrap(m, x[1], TW) }; });
+    var blockH = 0;
+    if (parts.length) {
+      blockH = 64;
+      parts.forEach(function (p, i) { blockH += (i ? 44 : 0) + 52 + p.lines.length * LH; });
+      blockH += 56;
+    }
+    var H = BASE + (blockH ? 40 + blockH : 0) + 110;
     canvas.width = W; canvas.height = H;
     var ctx = canvas.getContext("2d");
-    var LEX = '"Lexend", system-ui, sans-serif', MONO = '"Martian Mono", ui-monospace, monospace';
 
     // fundo
     ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
@@ -123,9 +146,26 @@
     ctx.font = "700 30px " + MONO; ctx.fillStyle = C.text;
     ctx.fillText("OBRIGADO PELA VISITA", mid, bTop + bH + 108);
 
+    // resumo e conclusão
+    if (blockH) {
+      var by2 = BASE + 40, bx2 = 90;
+      ctx.save(); ctx.shadowColor = "rgba(2,4,20,.6)"; ctx.shadowBlur = 50; ctx.shadowOffsetY = 24;
+      roundRect(ctx, bx2, by2, 900, blockH, 56);
+      var gb = ctx.createLinearGradient(0, by2, 0, by2 + blockH); gb.addColorStop(0, "rgba(255,255,255,.13)"); gb.addColorStop(1, "rgba(255,255,255,.06)");
+      ctx.fillStyle = gb; ctx.fill(); ctx.restore();
+      roundRect(ctx, bx2, by2, 900, blockH, 56); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(214,222,255,.26)"; ctx.stroke();
+      var ty = by2 + 64;
+      parts.forEach(function (p, i) {
+        if (i) ty += 44;
+        ctx.textAlign = "left"; ctx.font = "600 34px " + LEX; ctx.fillStyle = C.orange; ctx.fillText(p.title, bx2 + TX, ty + 30); ty += 52;
+        ctx.font = TFONT; ctx.fillStyle = C.text;
+        p.lines.forEach(function (ln) { ctx.fillText(ln, bx2 + TX, ty + 36); ty += LH; });
+      });
+    }
+
     // rodapé
-    ctx.font = "300 28px " + LEX; ctx.fillStyle = C.muted;
-    ctx.fillText("Diagnóstico gerado por IA · SENAI Naviraí", mid, H - 60);
+    ctx.textAlign = "center"; ctx.font = "300 28px " + LEX; ctx.fillStyle = C.muted;
+    ctx.fillText("Diagnóstico gerado por IA · SENAI Naviraí", mid, H - 55);
     return canvas;
   }
 

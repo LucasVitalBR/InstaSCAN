@@ -975,7 +975,8 @@ function renderReport(payload){
   setTab("tb-pil");
   var col = $("ticket-col"); col.classList.remove("print"); void col.offsetWidth; col.classList.add("print");
   prepareShare({ h: h, n: lido.nome || "", p: lido.publicacoes || "", s: lido.seguidores || "", g: lido.seguindo || "",
-                 f: counts.good, a: counts.opp, v: counts.inv, t: Math.max(0, Math.min(100, Math.round(nota))) });
+                 f: counts.good, a: counts.opp, v: counts.inv, t: Math.max(0, Math.min(100, Math.round(nota))),
+                 r: r.resumo_executivo || "", c: r.conclusao || "" });
 }
 
 /* ---------- compartilhar cupom (só a imagem PNG) ---------- */
