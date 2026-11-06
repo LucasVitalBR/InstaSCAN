@@ -450,7 +450,7 @@ h2{margin:0;font-weight:600;font-size:clamp(24px,6vw,34px);letter-spacing:-.02em
       <div class="scan-photo" id="scan-photo"><div class="scanline" aria-hidden="true"></div></div>
       <p class="scan-line" id="scan-line">Lendo a foto do perfil…</p>
       <div class="bar"><i id="scan-bar"></i></div>
-      <p class="mini" style="margin-top:12px">Com foto leva de 10 a 40 segundos.</p>
+      <p class="mini" style="margin-top:12px">Leva de 20 a 60 segundos.</p>
     </div>
   </section>
 
@@ -744,21 +744,25 @@ $("form-home").addEventListener("submit", function(ev){
     return;
   }
   if (!handle){ showError("error-home", "Tire uma foto da tela inicial do perfil ou digite o @."); return; }
-  var btn = $("btn-analisar"); btn.disabled = true; btn.textContent = "Buscando @" + handle + "…";
+  var ph = $("scan-photo");
+  ph.querySelectorAll("img,.at").forEach(function(n){ n.remove(); });
+  var at = document.createElement("div"); at.className = "at"; at.textContent = "@" + handle; ph.insertBefore(at, ph.firstChild);
+  $("scan-line").textContent = "Buscando @" + handle + " no Instagram…"; $("scan-bar").style.width = "4%";
+  showView("view-scan");
+  var lookTimer = setInterval(function(){ var b = $("scan-bar"); b.style.width = Math.min(30, parseFloat(b.style.width) + 2) + "%"; }, 1500);
+  function lookupFailed(msg){
+    clearInterval(lookTimer); showView("view-home");
+    homeBanner(msg);
+    $("home-banner").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+  }
   fetch("/api/instagram-lookup?handle=" + encodeURIComponent(handle))
     .then(function(r){ return r.json(); })
     .then(function(res){
-      btn.disabled = false; btn.textContent = "Analisar perfil";
-      if (res.ok){ runAnalysis({ handle: handle, negocio: state.negocio, instagramData: res.data, images: [] }, "view-home"); }
-      else {
-        homeBanner("O Instagram não liberou a consulta de <b>@" + esc(handle) + "</b> agora. Toque em <b>Fotografar perfil</b> e tire uma foto da tela inicial; depois toque em Analisar perfil.");
-        $("home-banner").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
-      }
+      if (res.ok){ clearInterval(lookTimer); runAnalysis({ handle: handle, negocio: state.negocio, instagramData: res.data, images: [] }, "view-home"); return; }
+      var why = /privada/i.test(res.error || "") ? "<b>@" + esc(handle) + "</b> é uma conta privada." : (/não encontrado/i.test(res.error || "") ? "Não achei o perfil <b>@" + esc(handle) + "</b>. Confira se o @ está certo." : "O Instagram não liberou a consulta de <b>@" + esc(handle) + "</b> agora.");
+      lookupFailed(why + " Toque em <b>Fotografar perfil</b> e tire uma foto da tela inicial; depois toque em Analisar perfil.");
     })
-    .catch(function(){
-      btn.disabled = false; btn.textContent = "Analisar perfil";
-      homeBanner("Consulta pelo @ indisponível agora. Use <b>Fotografar perfil</b>.");
-    });
+    .catch(function(){ lookupFailed("Consulta pelo @ indisponível agora. Use <b>Fotografar perfil</b>."); });
 });
 $("link-manual").addEventListener("click", function(e){
   e.preventDefault(); clearErrors();

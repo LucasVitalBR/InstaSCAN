@@ -95,7 +95,7 @@ async function fetchViaApify(username) {
     seguidores: u.followersCount ?? null,
     seguindo: u.followsCount ?? null,
     publicacoes: u.postsCount ?? null,
-    categoria: u.businessCategoryName || "",
+    categoria: u.businessCategoryName && u.businessCategoryName !== "None" ? u.businessCategoryName : "",
     link: u.externalUrl || "",
     posts,
   };
