@@ -255,7 +255,18 @@ h2{margin:0;font-weight:600;font-size:clamp(24px,6vw,34px);letter-spacing:-.02em
 .dock .cam{width:60px;height:60px;background:var(--orange);color:var(--on-orange);margin:0 4px;box-shadow:0 10px 24px -8px rgba(255,107,31,.85)}
 .dock .cam:hover{background:var(--orange-hi)}
 
-footer{padding-block:24px 130px;color:var(--muted);font-size:13px;font-weight:300;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;border-top:1px solid rgba(214,222,255,.1)}
+.example{padding-block:8px 56px}
+.ex-sub{margin-top:8px}
+.example .report{padding-bottom:0}
+.example .tabbar{margin-top:0}
+.site-foot{padding-block:36px 130px;color:var(--muted);font-size:14px;font-weight:300;line-height:1.55;border-top:1px solid rgba(214,222,255,.12)}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:28px}
+.fgrid h3{margin:0 0 8px;font-size:14px;font-weight:600;color:var(--text)}
+.fgrid p{margin:0 0 8px}
+.fgrid a{color:var(--text);text-decoration:underline;text-decoration-color:rgba(214,222,255,.35);text-underline-offset:3px}
+.fgrid a:hover{text-decoration-color:var(--orange)}
+.fbrand .logo{margin-bottom:10px}
+.flegal{margin-top:28px;padding-top:18px;border-top:1px solid rgba(214,222,255,.1);display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 24px;font-size:12.5px}
 
 .view-in{animation:viewin .45s cubic-bezier(.2,.8,.2,1) both}
 @keyframes viewin{from{opacity:0;transform:translateY(10px)}}
@@ -342,6 +353,72 @@ footer{padding-block:24px 130px;color:var(--muted);font-size:13px;font-weight:30
       <li class="glass"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M4 12h16"/></svg></span><div><b>A IA confere 12 pilares</b><span>Marca, conteúdo, conversão, prova social, oferta e mais.</span></div></li>
       <li class="glass"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-2-1.5L14 21l-2-1.5L10 21l-2-1.5L6 21z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><div><b>Sai o diagnóstico</b><span>Nota, gargalos e plano para 7, 30 e 90 dias.</span></div></li>
     </ol>
+
+    <section class="example" aria-labelledby="ex-t">
+      <h2 id="ex-t">Como o resultado aparece</h2>
+      <p class="mini ex-sub">Exemplo com o perfil do SENAI Naviraí. Números do perfil reais; nota e status ilustrativos.</p>
+      <div class="report ex-report">
+        <div class="ticket-col">
+          <article class="ticket glass" aria-label="Cupom de diagnóstico de exemplo">
+            <div class="shine" aria-hidden="true"></div>
+            <div class="c brand">InstaScan</div>
+            <div class="c muted">CUPOM DE DIAGNÓSTICO</div>
+            <div class="c muted">EXEMPLO</div>
+            <hr>
+            <div class="ln"><span>PERFIL</span><span>@senainaviraims</span></div>
+            <div class="ln"><span>POSTS</span><span>171</span></div>
+            <div class="ln"><span>SEGUIDORES</span><span>1.695</span></div>
+            <div class="ln"><span>SEGUINDO</span><span>331</span></div>
+            <hr>
+            <div class="ln"><span>PILARES FORTES</span><span class="ok">4</span></div>
+            <div class="ln"><span>A AJUSTAR</span><span class="warn">6</span></div>
+            <div class="ln"><span>A VERIFICAR</span><span>2</span></div>
+            <hr>
+            <div class="big"><span><small>nota do perfil</small></span><span><b>62</b><small>/100</small></span></div>
+            <div class="barcode" aria-hidden="true"></div>
+            <div class="c muted">MUNDO SENAI 2026 · NAVIRAÍ-MS</div>
+            <div class="c">OBRIGADO PELA VISITA</div>
+          </article>
+        </div>
+        <div>
+          <div class="tabbar ex-tabs" role="tablist" aria-label="Partes do diagnóstico de exemplo">
+            <button role="tab" aria-selected="true" aria-controls="ex-pil" id="exb-pil">Pilares</button>
+            <button role="tab" aria-selected="false" aria-controls="ex-gar" id="exb-gar">Gargalos</button>
+            <button role="tab" aria-selected="false" aria-controls="ex-pla" id="exb-pla">Plano</button>
+          </div>
+          <div class="tp" role="tabpanel" id="ex-pil" aria-labelledby="exb-pil">
+            <ul class="rows">
+              <li><div class="rh"><span>Posicionamento e clareza da marca</span><span class="tag good">forte</span></div></li>
+              <li><div class="rh"><span>Perfil e caminho de conversão</span><span class="tag opp">ajustar</span></div></li>
+              <li><div class="rh"><span>Conteúdo e estratégia editorial</span><span class="tag good">forte</span></div></li>
+              <li><div class="rh"><span>Criativos, imagens e vídeos</span><span class="tag good">forte</span></div></li>
+              <li><div class="rh"><span>Stories e relacionamento</span><span class="tag inv">verificar</span></div></li>
+              <li><div class="rh"><span>Confiança e prova social</span><span class="tag opp">ajustar</span></div></li>
+              <li><div class="rh"><span>Oferta e proposta comercial</span><span class="tag opp">ajustar</span></div></li>
+              <li><div class="rh"><span>Métricas e desempenho</span><span class="tag inv">verificar</span></div></li>
+              <li><div class="rh"><span>Atendimento e processo de vendas</span><span class="tag opp">ajustar</span></div></li>
+              <li><div class="rh"><span>Concorrência e mercado</span><span class="tag opp">ajustar</span></div></li>
+              <li><div class="rh"><span>Distribuição e aquisição de público</span><span class="tag opp">ajustar</span></div></li>
+              <li><div class="rh"><span>Coerência entre marca e oferta</span><span class="tag good">forte</span></div></li>
+            </ul>
+          </div>
+          <div class="tp" role="tabpanel" id="ex-gar" aria-labelledby="exb-gar" hidden>
+            <div class="gcards">
+              <div class="gcard glass"><h3>Link da bio genérico</h3><dl><dt>Evidência</dt><dd>O link leva a um formulário, sem os cursos com matrícula aberta.</dd><dt>Impacto</dt><dd>Quem chega interessado não encontra o curso que viu no post.</dd></dl></div>
+              <div class="gcard glass"><h3>Destaques sem organização por curso</h3><dl><dt>Evidência</dt><dd>Não há um destaque por área com datas e inscrição.</dd><dt>Impacto</dt><dd>As dúvidas voltam todas para o direct.</dd></dl></div>
+            </div>
+          </div>
+          <div class="tp" role="tabpanel" id="ex-pla" aria-labelledby="exb-pla" hidden>
+            <ul class="acts">
+              <li class="glass"><b>Trocar o link da bio por uma página com os cursos abertos.</b><small>7 dias · esforço baixo</small></li>
+              <li class="glass"><b>Criar destaques: Matrículas, Técnicos, Indústria.</b><small>7 dias · esforço baixo</small></li>
+              <li class="glass"><b>Publicar 2 depoimentos de ex-alunos por semana.</b><small>30 dias · esforço médio</small></li>
+              <li class="glass"><b>Parcerias com empresas que contratam ex-alunos.</b><small>90 dias · esforço alto</small></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
   </section>
 
   <section id="view-perfil" class="view" hidden>
@@ -423,9 +500,33 @@ footer{padding-block:24px 130px;color:var(--muted);font-size:13px;font-weight:30
     </div>
   </section>
 
-  <footer>
-    <span>InstaScan, projeto dos alunos do SENAI Naviraí.</span>
-    <span>Diagnóstico gerado por IA a partir do que aparece no perfil.</span>
+  <footer class="site-foot">
+    <div class="fgrid">
+      <div class="fbrand">
+        <span class="logo"><i><svg viewBox="0 0 24 24" fill="none" stroke="#1C0A02" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M4 12h16"/></svg></i>InstaScan</span>
+        <p>Diagnóstico comercial de perfis do Instagram com inteligência artificial.</p>
+      </div>
+      <div>
+        <h3>Instituição</h3>
+        <p>Projeto desenvolvido pelos alunos do SENAI Naviraí, Sistema FIEMS.</p>
+        <p>Rua Ceará, 135, Centro<br>Naviraí, MS</p>
+      </div>
+      <div>
+        <h3>Evento</h3>
+        <p>Mundo SENAI 2026<br>5 de novembro</p>
+        <p><a href="https://sistemafiems.ms.senai.br/mundo-senai" target="_blank" rel="noopener">Página do Mundo SENAI</a><br>
+        <a href="https://www.instagram.com/senainaviraims/" target="_blank" rel="noopener">@senainaviraims no Instagram</a></p>
+      </div>
+      <div>
+        <h3>Uso e privacidade</h3>
+        <p>As fotos enviadas servem só para gerar o diagnóstico. O InstaScan não guarda imagens nem resultados.</p>
+        <p>O diagnóstico é gerado por IA a partir do que aparece no perfil: use como ponto de partida, não como avaliação definitiva.</p>
+      </div>
+    </div>
+    <div class="flegal">
+      <span>© 2026 InstaScan, SENAI Naviraí. Todos os direitos reservados.</span>
+      <span>SENAI, SESI, IEL e FIEMS são marcas do Sistema FIEMS. Perfis de exemplo são públicos e usados com fins educacionais.</span>
+    </div>
   </footer>
 </main>
 </div>
@@ -698,9 +799,12 @@ function runAnalysis(payload, backView){
 }
 
 function setTab(id){
-  document.querySelectorAll(".tabbar button").forEach(function(b){ var on = b.id === id; b.setAttribute("aria-selected", on ? "true" : "false"); $(b.getAttribute("aria-controls")).hidden = !on; });
+  document.querySelectorAll(".tabbar:not(.ex-tabs) button").forEach(function(b){ var on = b.id === id; b.setAttribute("aria-selected", on ? "true" : "false"); $(b.getAttribute("aria-controls")).hidden = !on; });
 }
-document.querySelectorAll(".tabbar button").forEach(function(b){ b.addEventListener("click", function(){ setTab(b.id); }); });
+document.querySelectorAll(".tabbar:not(.ex-tabs) button").forEach(function(b){ b.addEventListener("click", function(){ setTab(b.id); }); });
+document.querySelectorAll(".ex-tabs button").forEach(function(b){ b.addEventListener("click", function(){
+  document.querySelectorAll(".ex-tabs button").forEach(function(x){ var on = x === b; x.setAttribute("aria-selected", on ? "true" : "false"); $(x.getAttribute("aria-controls")).hidden = !on; });
+}); });
 function renderPlan(key){
   document.querySelectorAll(".seg button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.h === key ? "true" : "false"); });
   var r = state.lastReport || {}, host = $("r-plano"); host.innerHTML = "";
