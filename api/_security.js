@@ -10,22 +10,33 @@ function normCode(v) {
   return String(v || "").trim().toUpperCase();
 }
 
-// Confere o código do evento. A variável EVENT_CODE no Vercel pode ter um código só
-// ("INSTANOME26") ou vários separados por vírgula, um por pessoa ("CODIGOA,CODIGOB,CODIGOC").
-// Para cortar o acesso de um aluno, é só tirar o código dele da lista e republicar.
+// Confere o código de acesso. A variável EVENT_CODE no Vercel tem um ou mais códigos
+// separados por vírgula; cada um pode trazer o nome a exibir depois de dois-pontos
+// ("CODIGOA:Ana,CODIGOB:João"). Para cortar o acesso de alguém, tire o código da lista.
 // Se a variável não existir, bloqueia tudo: melhor o app parado do que aberto sem controle.
 function sameText(a, b) {
   const x = Buffer.from(a), y = Buffer.from(b);
   return x.length === y.length && crypto.timingSafeEqual(x, y);
 }
+function parseCodes() {
+  return String(process.env.EVENT_CODE || "")
+    .split(",")
+    .map((item) => {
+      const k = item.indexOf(":");
+      const code = normCode(k >= 0 ? item.slice(0, k) : item);
+      const name = k >= 0 ? item.slice(k + 1).trim().slice(0, 40) : "";
+      return { code, name };
+    })
+    .filter((e) => e.code);
+}
 function checkEventCode(req) {
-  const list = String(process.env.EVENT_CODE || "").split(",").map(normCode).filter(Boolean);
-  if (!list.length) return { ok: false, status: 503, error: "O código do evento ainda não foi configurado no servidor." };
+  const list = parseCodes();
+  if (!list.length) return { ok: false, status: 503, error: "O código de acesso ainda não foi configurado no servidor." };
   const got = normCode(req.headers["x-event-code"]);
   let idx = -1;
-  list.forEach((c, i) => { if (got && sameText(got, c)) idx = i; });
-  if (idx < 0) return { ok: false, status: 401, error: "Código do evento inválido. Peça o seu código ao professor e digite de novo." };
-  return { ok: true, slot: idx + 1 };
+  list.forEach((e, i) => { if (got && sameText(got, e.code)) idx = i; });
+  if (idx < 0) return { ok: false, status: 401, error: "Código inválido. Peça o seu código ao professor e digite de novo." };
+  return { ok: true, slot: idx + 1, name: list[idx].name };
 }
 
 function cleanStr(v, max) {

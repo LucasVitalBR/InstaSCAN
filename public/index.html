@@ -571,13 +571,13 @@ h2{margin:0;font-weight:600;font-size:clamp(24px,6vw,34px);letter-spacing:-.02em
     <svg class="mark" viewBox="0 0 120 120" aria-hidden="true"><g fill="none" stroke-linecap="round" stroke-width="10"><g stroke="#45D4FF"><path d="M12 36 V24 A12 12 0 0 1 24 12 H36"/><path d="M84 12 H96 A12 12 0 0 1 108 24 V36"/><path d="M108 84 V96 A12 12 0 0 1 96 108 H84"/><path d="M36 108 H24 A12 12 0 0 1 12 96 V84"/></g><g stroke="#FF6B1F"><circle cx="60" cy="60" r="11"/><path d="M71 52 V64 A8 8 0 0 0 87 64 V60 A27 27 0 1 0 76.5 81.5"/></g></g></svg>
     <div id="gate-in">
       <h2 id="gate-title">Entrar no InstaScan</h2>
-      <p class="mini">Digite o seu código do evento. Você só faz isso uma vez neste celular.</p>
-      <div class="handle-wrap"><input id="gate-code" placeholder="ex: INSTANOME26" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-labelledby="gate-title"></div>
+      <p class="mini">Digite o seu código de acesso. Você só faz isso uma vez neste celular.</p>
+      <div class="handle-wrap"><input id="gate-code" placeholder="Seu código" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-labelledby="gate-title"></div>
       <p class="gate-err" id="gate-err" role="alert"></p>
       <button class="btn main wide" id="gate-btn" type="submit">Entrar</button>
     </div>
     <div id="gate-out" hidden>
-      <h2>Olá, <span id="gate-name"></span></h2>
+      <h2>Olá<span id="gate-name"></span></h2>
       <p class="mini">Você está conectado e pode fazer as análises neste celular.</p>
       <button class="btn main wide" id="gate-ok" type="button">Continuar</button>
       <button class="btn ghost glass wide" id="gate-logout" type="button">Sair deste celular</button>
@@ -613,13 +613,13 @@ function authHeaders(extra){ var h = extra || {}; h["x-event-code"] = getCode();
 function renderUser(){
   var on = !!getCode(), nome = load(NAME_KEY);
   $("user-pill").classList.toggle("on", on);
-  $("user-label").innerHTML = on ? 'Olá, <b>' + esc(nome || "conectado") + '</b>' : "Entrar";
+  $("user-label").innerHTML = on ? (nome ? 'Olá, <b>' + esc(nome) + '</b>' : "Conectado") : "Entrar";
   $("user-pill").setAttribute("aria-label", on ? "Conectado" + (nome ? " como " + nome : "") + ". Abrir opções" : "Entrar com o código do evento");
 }
 function openGate(msg){
   var on = !!getCode();
   $("gate-in").hidden = on; $("gate-out").hidden = !on;
-  $("gate-name").textContent = load(NAME_KEY) || "conectado";
+  $("gate-name").textContent = load(NAME_KEY) ? ", " + load(NAME_KEY) : "";
   $("gate-err").textContent = msg || "";
   $("gate").hidden = false;
   setTimeout(function(){ (on ? $("gate-ok") : $("gate-code")).focus(); }, 50);
@@ -650,7 +650,7 @@ $("gate-form").addEventListener("submit", function(e){
 });
 renderUser();
 if (!getCode()) openGate();
-else if (!load(NAME_KEY)) {
+else {
   fetch("/api/check-code", { method:"POST", headers: authHeaders() })
     .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }); })
     .then(function(res){ if (res.ok){ store(NAME_KEY, res.j.nome || ""); renderUser(); } else if (res.j && res.j.error){ setCode(""); openGate(res.j.error); } })
